@@ -6,7 +6,6 @@ import difflib
 def check(code):
     tree = ast.parse(code)
     new_code = decompile(tree)
-    print new_code
     new_tree = ast.parse(new_code)
     dumped = ast.dump(ast.parse(code))
     new_dumped = ast.dump(new_tree)

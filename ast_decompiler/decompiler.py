@@ -104,8 +104,8 @@ class ParensAdder(ast.NodeTransformer):
 
     def visit_Tuple(self, node):
         if isinstance(self.node_stack[-2],
-                      (ast.Expr, ast.Assign, ast.AugAssign, ast.Return, ast.Yield, ast.Lambda,
-                       ast.arguments)):
+                      (ast.Expr, ast.Assign, ast.AugAssign, ast.Return, ast.Yield,
+                       ast.arguments)) and node.elts:
             return self.generic_visit(node)
         else:
             return self.parenthesize(node)
@@ -154,6 +154,14 @@ class ParensAdder(ast.NodeTransformer):
         my_prec = self.precedence_of_node(node)
         parent_prec = self.precedence_of_node(self.node_stack[-2])
         if my_prec < parent_prec:
+            return self.parenthesize(node)
+        else:
+            return self.generic_visit(node)
+
+    def visit_BoolOp(self, node):
+        my_prec = self.precedence_of_node(node)
+        parent_prec = self.precedence_of_node(self.node_stack[-2])
+        if my_prec <= parent_prec:
             return self.parenthesize(node)
         else:
             return self.generic_visit(node)
@@ -431,19 +439,15 @@ class Decompiler(ast.NodeVisitor):
         self.write(')')
 
     def visit_BoolOp(self, node):
-        self.write('(')
         op = 'and' if isinstance(node.op, ast.And) else 'or'
         self.write_expression_list(node.values, separator=' %s ' % op)
-        self.write(')')
 
     def visit_BinOp(self, node):
-        self.write('(')
         self.visit(node.left)
         self.write(' ')
         self.visit(node.op)
         self.write(' ')
         self.visit(node.right)
-        self.write(')')
 
     def visit_UnaryOp(self, node):
         self.visit(node.op)
@@ -577,13 +581,11 @@ class Decompiler(ast.NodeVisitor):
         self.write(']')
 
     def visit_Tuple(self, node):
-        self.write('(')
         if len(node.elts) == 1:
             self.visit(node.elts[0])
             self.write(',')
         else:
             self.write_expression_list(node.elts)
-        self.write(')')
 
     # slice
 
