@@ -61,30 +61,21 @@ _PRECEDENCE = {
 
 
 def decompile(ast):
-    ast = ParensAdder().visit(ast)
     decompiler = Decompiler()
     decompiler.visit(ast)
     return ''.join(decompiler.data)
 
 
-class Parens(ast.AST):
-    """Pseudo-AST node to add parentheses where needed."""
-    _fields = ['body']
-
-    def __init__(self, body, lineno=None, col_offset=None):
-        self.body = body
-        self.lineno = lineno
-        self.col_offset = col_offset
-
-
-class ParensAdder(ast.NodeTransformer):
+class Decompiler(ast.NodeVisitor):
     def __init__(self):
+        self.data = []
+        self.indentation = 0
         self.node_stack = []
 
     def visit(self, node):
         self.node_stack.append(node)
         try:
-            return super(ParensAdder, self).visit(node)
+            return super(Decompiler, self).visit(node)
         finally:
             self.node_stack.pop()
 
@@ -92,93 +83,6 @@ class ParensAdder(ast.NodeTransformer):
         if isinstance(node, (ast.BinOp, ast.UnaryOp)):
             return _PRECEDENCE[type(node.op)]
         return _PRECEDENCE.get(type(node), -1)
-
-    def parenthesize(self, node):
-        return Parens(self.generic_visit(node), lineno=node.lineno, col_offset=node.col_offset)
-
-    def visit_Yield(self, node):
-        if isinstance(self.node_stack[-2], (ast.Expr, ast.Assign, ast.AugAssign)):
-            return self.generic_visit(node)
-        else:
-            return self.parenthesize(node)
-
-    def visit_Tuple(self, node):
-        if isinstance(self.node_stack[-2],
-                      (ast.Expr, ast.Assign, ast.AugAssign, ast.Return, ast.Yield,
-                       ast.arguments)) and node.elts:
-            return self.generic_visit(node)
-        else:
-            return self.parenthesize(node)
-
-    def visit_Lambda(self, node):
-        if isinstance(self.node_stack[-2],
-                      (ast.BinOp, ast.UnaryOp, ast.Compare, ast.IfExp, ast.Attribute, ast.Subscript,
-                       ast.Call)):
-            return self.parenthesize(node)
-        else:
-            return self.generic_visit(node)
-
-    def visit_IfExp(self, node):
-        parent_node = self.node_stack[-2]
-        if isinstance(parent_node,
-                      (ast.BinOp, ast.UnaryOp, ast.Compare, ast.Attribute, ast.Subscript,
-                       ast.Call)):
-            return self.parenthesize(node)
-        elif isinstance(parent_node, ast.IfExp) and \
-                (node is parent_node.test or node is parent_node.body):
-            return self.parenthesize(node)
-        else:
-            return self.generic_visit(node)
-
-    def visit_BinOp(self, node):
-        parent_node = self.node_stack[-2]
-        my_prec = self.precedence_of_node(node)
-        parent_prec = self.precedence_of_node(parent_node)
-        if my_prec < parent_prec:
-            return self.parenthesize(node)
-        elif my_prec == parent_prec:
-            if isinstance(node.op, ast.Pow):
-                if node == parent_node.left:
-                    return self.parenthesize(node)
-                else:
-                    return self.generic_visit(node)
-            else:
-                if node == parent_node.right:
-                    return self.parenthesize(node)
-                else:
-                    return self.generic_visit(node)
-        else:
-            return self.generic_visit(node)
-
-    def visit_UnaryOp(self, node):
-        my_prec = self.precedence_of_node(node)
-        parent_prec = self.precedence_of_node(self.node_stack[-2])
-        if my_prec < parent_prec:
-            return self.parenthesize(node)
-        else:
-            return self.generic_visit(node)
-
-    def visit_BoolOp(self, node):
-        my_prec = self.precedence_of_node(node)
-        parent_prec = self.precedence_of_node(self.node_stack[-2])
-        if my_prec <= parent_prec:
-            return self.parenthesize(node)
-        else:
-            return self.generic_visit(node)
-
-    def visit_Compare(self, node):
-        my_prec = self.precedence_of_node(node)
-        parent_prec = self.precedence_of_node(self.node_stack[-2])
-        if my_prec <= parent_prec:
-            return self.parenthesize(node)
-        else:
-            return self.generic_visit(node)
-
-
-class Decompiler(ast.NodeVisitor):
-    def __init__(self):
-        self.data = []
-        self.indentation = 0
 
     def write(self, code):
         assert isinstance(code, basestring), 'invalid code %r' % code
@@ -208,6 +112,15 @@ class Decompiler(ast.NodeVisitor):
             yield
         finally:
             self.indentation -= 4
+
+    @contextmanager
+    def parenthesize_if(self, condition):
+        if condition:
+            self.write('(')
+            yield
+            self.write(')')
+        else:
+            yield
 
     def generic_visit(self, node):
         raise NotImplementedError('missing visit method for %r' % node)
@@ -433,40 +346,72 @@ class Decompiler(ast.NodeVisitor):
 
     # Expressions
 
-    def visit_Parens(self, node):
-        self.write('(')
-        self.visit(node.body)
-        self.write(')')
-
     def visit_BoolOp(self, node):
-        op = 'and' if isinstance(node.op, ast.And) else 'or'
-        self.write_expression_list(node.values, separator=' %s ' % op)
+        my_prec = self.precedence_of_node(node)
+        parent_prec = self.precedence_of_node(self.node_stack[-2])
+        with self.parenthesize_if(my_prec <= parent_prec):
+            op = 'and' if isinstance(node.op, ast.And) else 'or'
+            self.write_expression_list(node.values, separator=' %s ' % op)
 
     def visit_BinOp(self, node):
-        self.visit(node.left)
-        self.write(' ')
-        self.visit(node.op)
-        self.write(' ')
-        self.visit(node.right)
+        parent_node = self.node_stack[-2]
+        my_prec = self.precedence_of_node(node)
+        parent_prec = self.precedence_of_node(parent_node)
+        if my_prec < parent_prec:
+            should_parenthesize = True
+        elif my_prec == parent_prec:
+            if isinstance(node.op, ast.Pow):
+                should_parenthesize = node == parent_node.left
+            else:
+                should_parenthesize = node == parent_node.right
+        else:
+            should_parenthesize = False
+
+        with self.parenthesize_if(should_parenthesize):
+            self.visit(node.left)
+            self.write(' ')
+            self.visit(node.op)
+            self.write(' ')
+            self.visit(node.right)
 
     def visit_UnaryOp(self, node):
-        self.visit(node.op)
-        self.visit(node.operand)
+        my_prec = self.precedence_of_node(node)
+        parent_prec = self.precedence_of_node(self.node_stack[-2])
+        with self.parenthesize_if(my_prec < parent_prec):
+            self.visit(node.op)
+            self.visit(node.operand)
 
     def visit_Lambda(self, node):
-        self.write('lambda')
-        if node.args.args or node.args.vararg or node.args.kwarg:
-            self.write(' ')
-        self.visit(node.args)
-        self.write(': ')
-        self.visit(node.body)
+        should_parenthesize = isinstance(
+            self.node_stack[-2],
+            (ast.BinOp, ast.UnaryOp, ast.Compare, ast.IfExp, ast.Attribute, ast.Subscript, ast.Call)
+        )
+        with self.parenthesize_if(should_parenthesize):
+            self.write('lambda')
+            if node.args.args or node.args.vararg or node.args.kwarg:
+                self.write(' ')
+            self.visit(node.args)
+            self.write(': ')
+            self.visit(node.body)
 
     def visit_IfExp(self, node):
-        self.visit(node.body)
-        self.write(' if ')
-        self.visit(node.test)
-        self.write(' else ')
-        self.visit(node.orelse)
+        parent_node = self.node_stack[-2]
+        if isinstance(parent_node,
+                      (ast.BinOp, ast.UnaryOp, ast.Compare, ast.Attribute, ast.Subscript,
+                       ast.Call)):
+            should_parenthesize = True
+        elif isinstance(parent_node, ast.IfExp) and \
+                (node is parent_node.test or node is parent_node.body):
+            should_parenthesize = True
+        else:
+            should_parenthesize = False
+
+        with self.parenthesize_if(should_parenthesize):
+            self.visit(node.body)
+            self.write(' if ')
+            self.visit(node.test)
+            self.write(' else ')
+            self.visit(node.orelse)
 
     def visit_Dict(self, node):
         self.write('{')
@@ -512,19 +457,23 @@ class Decompiler(ast.NodeVisitor):
         self.write(end)
 
     def visit_Yield(self, node):
-        self.write('(yield')
-        if node.value:
-            self.write(' ')
-            self.visit(node.value)
-        self.write(')')
+        with self.parenthesize_if(
+                not isinstance(self.node_stack[-2], (ast.Expr, ast.Assign, ast.AugAssign))):
+            self.write('yield')
+            if node.value:
+                self.write(' ')
+                self.visit(node.value)
 
     def visit_Compare(self, node):
-        self.visit(node.left)
-        for op, expr in zip(node.ops, node.comparators):
-            self.write(' ')
-            self.visit(op)
-            self.write(' ')
-            self.visit(expr)
+        my_prec = self.precedence_of_node(node)
+        parent_prec = self.precedence_of_node(self.node_stack[-2])
+        with self.parenthesize_if(my_prec <= parent_prec):
+            self.visit(node.left)
+            for op, expr in zip(node.ops, node.comparators):
+                self.write(' ')
+                self.visit(op)
+                self.write(' ')
+                self.visit(expr)
 
     def visit_Call(self, node):
         self.visit(node.func)
@@ -581,11 +530,19 @@ class Decompiler(ast.NodeVisitor):
         self.write(']')
 
     def visit_Tuple(self, node):
-        if len(node.elts) == 1:
-            self.visit(node.elts[0])
-            self.write(',')
+        if not node.elts:
+            self.write('()')
         else:
-            self.write_expression_list(node.elts)
+            should_parenthesize = not isinstance(
+                self.node_stack[-2],
+                (ast.Expr, ast.Assign, ast.AugAssign, ast.Return, ast.Yield, ast.arguments)
+            )
+            with self.parenthesize_if(should_parenthesize):
+                if len(node.elts) == 1:
+                    self.visit(node.elts[0])
+                    self.write(',')
+                else:
+                    self.write_expression_list(node.elts)
 
     # slice
 
