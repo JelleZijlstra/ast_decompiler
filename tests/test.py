@@ -116,6 +116,12 @@ def test_With():
     check('with x as y: pass')
     check('with x as y, a as b: pass')
     check('with x as y, a: pass')
+    check('''
+with x as y:
+    with a as b:
+        with c as d:
+            pass
+''')
 
 
 def test_Raise():

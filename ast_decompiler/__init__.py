@@ -3,4 +3,6 @@
 Generate Python code given an AST.
 
 """
-from decompiler import decompile
+__version__ = '0.1'
+
+from .decompiler import decompile

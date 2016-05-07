@@ -33,6 +33,8 @@ _OP_TO_STR = {
     ast.IsNot: 'is not',
     ast.In: 'in',
     ast.NotIn: 'not in',
+    ast.And: 'and',
+    ast.Or: 'or',
 }
 _PRECEDENCE = {
     ast.Or: 0,
@@ -83,6 +85,12 @@ class Decompiler(ast.NodeVisitor):
         if isinstance(node, (ast.BinOp, ast.UnaryOp)):
             return _PRECEDENCE[type(node.op)]
         return _PRECEDENCE.get(type(node), -1)
+
+    def get_parent_node(self):
+        try:
+            return self.node_stack[-2]
+        except IndexError:
+            return None
 
     def write(self, code):
         assert isinstance(code, basestring), 'invalid code %r' % code
@@ -189,6 +197,13 @@ class Decompiler(ast.NodeVisitor):
         self.visit(node.test)
         self.write(':\n')
         self.write_suite(node.body)
+        while node.orelse and len(node.orelse) == 1 and isinstance(node.orelse[0], ast.If):
+            node = node.orelse[0]
+            self.write_indentation()
+            self.write('elif ')
+            self.visit(node.test)
+            self.write(':\n')
+            self.write_suite(node.body)
         self.write_else(node.orelse)
 
     def write_else(self, orelse):
@@ -200,34 +215,41 @@ class Decompiler(ast.NodeVisitor):
     def visit_With(self, node):
         self.write_indentation()
         self.write('with ')
-        self.visit(node.context_expr)
-        if node.optional_vars:
-            self.write(' as ')
-            self.visit(node.optional_vars)
+        nodes = [node]
+        body = node.body
+        is_first = True
+
+        while len(body) == 1 and isinstance(body[0], ast.With):
+            nodes.append(body[0])
+            body = body[0].body
+
+        for context_node in nodes:
+            if is_first:
+                is_first = False
+            else:
+                self.write(', ')
+            self.visit(context_node.context_expr)
+            if context_node.optional_vars:
+                self.write(' as ')
+                self.visit(context_node.optional_vars)
         self.write(':\n')
-        self.write_suite(node.body)
+        self.write_suite(body)
 
     def visit_TryExcept(self, node):
         self.write_indentation()
         self.write('try:\n')
         self.write_suite(node.body)
         for handler in node.handlers:
-            self.write_indentation()
-            self.write('except')
-            if handler.type:
-                self.write(' ')
-                self.visit(handler.type)
-                if handler.name:
-                    self.write(' as ')
-                    self.visit(handler.name)
-            self.write(':\n')
-            self.write_suite(handler.body)
+            self.visit(handler)
         self.write_else(node.orelse)
 
     def visit_TryFinally(self, node):
-        self.write_indentation()
-        self.write('try:\n')
-        self.write_suite(node.body)
+        if len(node.body) == 1 and isinstance(node.body[0], ast.TryExcept):
+            self.visit(node.body[0])
+        else:
+            self.write_indentation()
+            self.write('try:\n')
+            self.write_suite(node.body)
         self.write_indentation()
         self.write('finally:\n')
         self.write_suite(node.finalbody)
@@ -348,13 +370,13 @@ class Decompiler(ast.NodeVisitor):
 
     def visit_BoolOp(self, node):
         my_prec = self.precedence_of_node(node)
-        parent_prec = self.precedence_of_node(self.node_stack[-2])
+        parent_prec = self.precedence_of_node(self.get_parent_node())
         with self.parenthesize_if(my_prec <= parent_prec):
             op = 'and' if isinstance(node.op, ast.And) else 'or'
             self.write_expression_list(node.values, separator=' %s ' % op)
 
     def visit_BinOp(self, node):
-        parent_node = self.node_stack[-2]
+        parent_node = self.get_parent_node()
         my_prec = self.precedence_of_node(node)
         parent_prec = self.precedence_of_node(parent_node)
         if my_prec < parent_prec:
@@ -376,14 +398,14 @@ class Decompiler(ast.NodeVisitor):
 
     def visit_UnaryOp(self, node):
         my_prec = self.precedence_of_node(node)
-        parent_prec = self.precedence_of_node(self.node_stack[-2])
+        parent_prec = self.precedence_of_node(self.get_parent_node())
         with self.parenthesize_if(my_prec < parent_prec):
             self.visit(node.op)
             self.visit(node.operand)
 
     def visit_Lambda(self, node):
         should_parenthesize = isinstance(
-            self.node_stack[-2],
+            self.get_parent_node(),
             (ast.BinOp, ast.UnaryOp, ast.Compare, ast.IfExp, ast.Attribute, ast.Subscript, ast.Call)
         )
         with self.parenthesize_if(should_parenthesize):
@@ -395,7 +417,7 @@ class Decompiler(ast.NodeVisitor):
             self.visit(node.body)
 
     def visit_IfExp(self, node):
-        parent_node = self.node_stack[-2]
+        parent_node = self.get_parent_node()
         if isinstance(parent_node,
                       (ast.BinOp, ast.UnaryOp, ast.Compare, ast.Attribute, ast.Subscript,
                        ast.Call)):
@@ -458,7 +480,7 @@ class Decompiler(ast.NodeVisitor):
 
     def visit_Yield(self, node):
         with self.parenthesize_if(
-                not isinstance(self.node_stack[-2], (ast.Expr, ast.Assign, ast.AugAssign))):
+                not isinstance(self.get_parent_node(), (ast.Expr, ast.Assign, ast.AugAssign))):
             self.write('yield')
             if node.value:
                 self.write(' ')
@@ -466,7 +488,7 @@ class Decompiler(ast.NodeVisitor):
 
     def visit_Compare(self, node):
         my_prec = self.precedence_of_node(node)
-        parent_prec = self.precedence_of_node(self.node_stack[-2])
+        parent_prec = self.precedence_of_node(self.get_parent_node())
         with self.parenthesize_if(my_prec <= parent_prec):
             self.visit(node.left)
             for op, expr in zip(node.ops, node.comparators):
@@ -534,7 +556,7 @@ class Decompiler(ast.NodeVisitor):
             self.write('()')
         else:
             should_parenthesize = not isinstance(
-                self.node_stack[-2],
+                self.get_parent_node(),
                 (ast.Expr, ast.Assign, ast.AugAssign, ast.Return, ast.Yield, ast.arguments)
             )
             with self.parenthesize_if(should_parenthesize):
@@ -571,6 +593,9 @@ class Decompiler(ast.NodeVisitor):
 
     # Other types
 
+    visit_Load = visit_Store = visit_Del = visit_AugLoad = visit_AugStore = visit_Param = \
+        lambda self, node: None
+
     def visit_comprehension(self, node):
         self.write(' for ')
         self.visit(node.target)
@@ -579,6 +604,18 @@ class Decompiler(ast.NodeVisitor):
         for expr in node.ifs:
             self.write(' if ')
             self.visit(expr)
+
+    def visit_ExceptHandler(self, node):
+        self.write_indentation()
+        self.write('except')
+        if node.type:
+            self.write(' ')
+            self.visit(node.type)
+            if node.name:
+                self.write(' as ')
+                self.visit(node.name)
+        self.write(':\n')
+        self.write_suite(node.body)
 
     def visit_arguments(self, node):
         num_defaults = len(node.defaults)
