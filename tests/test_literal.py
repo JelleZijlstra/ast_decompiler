@@ -94,3 +94,10 @@ elif a:
 else:
     pass
 ''')
+
+
+def test_BinOp():
+    assert_decompiles('''
+f(a * b)
+''', '''f(a * b)
+''')

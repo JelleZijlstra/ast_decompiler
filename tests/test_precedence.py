@@ -54,3 +54,12 @@ def test_UnaryOp():
     check('not not x')
     check('-(not x)')
     check('not (-x)')
+
+
+def test_Call():
+    check('f(a, b)')
+    check('f((a, b))')
+    check('(a, b)(a, b)')
+    check('a.b(c, d)')
+    check('f((yield a), b)')
+    check('f(a, (yield b))')

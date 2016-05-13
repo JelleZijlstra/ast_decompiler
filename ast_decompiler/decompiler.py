@@ -36,7 +36,17 @@ _OP_TO_STR = {
     ast.And: 'and',
     ast.Or: 'or',
 }
+
+
+class _CallArgs(object):
+    """Used as an entry in the precedence table.
+
+    Needed to convey the high precedence of the callee but low precedence of the arguments.
+
+    """
+
 _PRECEDENCE = {
+    _CallArgs: -1,
     ast.Or: 0,
     ast.And: 1,
     ast.Not: 2,
@@ -501,26 +511,30 @@ class Decompiler(ast.NodeVisitor):
         self.visit(node.func)
         self.write('(')
 
-        written_something = False
-        args = node.args + node.keywords
-        if args:
-            written_something = True
-            self.write_expression_list(args)
-
-        if node.starargs:
-            if written_something:
-                self.write(', ')
-            else:
+        self.node_stack.append(_CallArgs())
+        try:
+            written_something = False
+            args = node.args + node.keywords
+            if args:
                 written_something = True
-            self.write('*')
-            self.visit(node.starargs)
-        if node.kwargs:
-            if written_something:
-                self.write(', ')
-            self.write('**')
-            self.visit(node.kwargs)
+                self.write_expression_list(args)
 
-        self.write(')')
+            if node.starargs:
+                if written_something:
+                    self.write(', ')
+                else:
+                    written_something = True
+                self.write('*')
+                self.visit(node.starargs)
+            if node.kwargs:
+                if written_something:
+                    self.write(', ')
+                self.write('**')
+                self.visit(node.kwargs)
+
+            self.write(')')
+        finally:
+            self.node_stack.pop()
 
     def visit_Repr(self, node):
         self.write('`')
