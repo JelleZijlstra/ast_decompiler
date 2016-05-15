@@ -525,16 +525,14 @@ class Decompiler(ast.NodeVisitor):
 
     def visit_Dict(self, node):
         self.write('{')
-        seen_one = False
-        for key, value in zip(node.keys, node.values):
-            if seen_one:
-                self.write(', ')
-            else:
-                seen_one = True
-            self.visit(key)
-            self.write(': ')
-            self.visit(value)
+        items = [KeyValuePair(key, value) for key, value in zip(node.keys, node.values)]
+        self.write_expression_list(items, need_parens=False)
         self.write('}')
+
+    def visit_KeyValuePair(self, node):
+        self.visit(node.key)
+        self.write(': ')
+        self.visit(node.value)
 
     def visit_Set(self, node):
         self.write('{')
@@ -549,12 +547,8 @@ class Decompiler(ast.NodeVisitor):
 
     def visit_DictComp(self, node):
         self.write('{')
-        self.visit(node.key)
-        self.write(': ')
-        self.visit(node.value)
-        for comprehension in node.generators:
-            self.write(' ')
-            self.visit(comprehension)
+        elts = [KeyValuePair(node.key, node.value)] + node.generators
+        self.write_expression_list(elts, separator=' ', need_parens=False)
         self.write('}')
 
     def visit_GeneratorExp(self, node):
@@ -590,28 +584,31 @@ class Decompiler(ast.NodeVisitor):
 
         self.node_stack.append(_CallArgs())
         try:
-            written_something = False
             args = node.args + node.keywords
-            if args:
-                written_something = True
-                self.write_expression_list(args, need_parens=False)
-
             if node.starargs:
-                if written_something:
-                    self.write(', ')
-                else:
-                    written_something = True
-                self.write('*')
-                self.visit(node.starargs)
+                args.append(StarArg(node.starargs))
             if node.kwargs:
-                if written_something:
-                    self.write(', ')
-                self.write('**')
-                self.visit(node.kwargs)
+                args.append(DoubleStarArg(node.kwargs))
+
+            if args:
+                self.write_expression_list(args, need_parens=False)
 
             self.write(')')
         finally:
             self.node_stack.pop()
+
+    def visit_StarArg(self, node):
+        self.write('*')
+        self.visit(node.arg)
+
+    def visit_DoubleStarArg(self, node):
+        self.write('**')
+        self.visit(node.arg)
+
+    def visit_KeywordArg(self, node):
+        self.visit(node.arg)
+        self.write('=')
+        self.visit(node.value)
 
     def visit_Repr(self, node):
         self.write('`')
@@ -712,37 +709,28 @@ class Decompiler(ast.NodeVisitor):
     def visit_arguments(self, node):
         num_defaults = len(node.defaults)
         if num_defaults:
-            non_default_args = node.args[:-num_defaults]
+            args = node.args[:-num_defaults]
             default_args = zip(node.args[-num_defaults:], node.defaults)
         else:
-            non_default_args = node.args
+            args = list(node.args)
             default_args = []
 
-        written_something = False
-        if non_default_args:
-            written_something = True
-            # this messes up with lambdas
-            self.write_expression_list(non_default_args, allow_newlines=False)
-
         for name, value in default_args:
-            if written_something:
-                self.write(', ')
-            else:
-                written_something = True
-            self.visit(name)
-            self.write('=')
-            self.visit(value)
-
+            args.append(KeywordArg(name, value))
         if node.vararg:
-            if written_something:
-                self.write(', ')
-            else:
-                written_something = True
-            self.write('*%s' % node.vararg)
+            args.append(StarArg(ast.Name(id=node.vararg)))
         if node.kwarg:
-            if written_something:
-                self.write(', ')
-            self.write('**%s' % node.kwarg)
+            args.append(DoubleStarArg(ast.Name(id=node.kwarg)))
+
+        if args:
+            # lambdas can't have a multiline arglist
+            allow_newlines = not isinstance(self.get_parent_node(), ast.Lambda)
+            self.write_expression_list(
+                args,
+                allow_newlines=allow_newlines,
+                need_parens=False,
+                final_separator_if_multiline=False  # illegal after **kwargs
+            )
 
     def visit_keyword(self, node):
         self.write(node.arg + '=')
@@ -752,3 +740,38 @@ class Decompiler(ast.NodeVisitor):
         self.write(node.name)
         if node.asname is not None:
             self.write(' as %s' % node.asname)
+
+
+# helper ast nodes to make decompilation easier
+class KeyValuePair(object):
+    """A key-value pair as used in a dictionary display."""
+    _fields = ['key', 'value']
+
+    def __init__(self, key, value):
+        self.key = key
+        self.value = value
+
+
+class StarArg(object):
+    """A * argument."""
+    _fields = ['arg']
+
+    def __init__(self, arg):
+        self.arg = arg
+
+
+class DoubleStarArg(object):
+    """A ** argument."""
+    _fields = ['arg']
+
+    def __init__(self, arg):
+        self.arg = arg
+
+
+class KeywordArg(object):
+    """A x=3 keyword argument in a function definition."""
+    _fields = ['arg', 'value']
+
+    def __init__(self, arg, value):
+        self.arg = arg
+        self.value = value
