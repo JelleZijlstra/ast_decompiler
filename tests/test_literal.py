@@ -1,14 +1,4 @@
-import ast
-from ast_decompiler import decompile
-import difflib
-
-
-def assert_decompiles(code, result):
-    decompile_result = decompile(ast.parse(code))
-    if result != decompile_result:
-        for line in difflib.unified_diff(result.splitlines(), decompile_result.splitlines()):
-            print line
-        assert False, 'failed to decompile %s' % code
+from tests import assert_decompiles
 
 
 def test_With():

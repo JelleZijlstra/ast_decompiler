@@ -1,4 +1,4 @@
-from test import check
+from tests import check
 
 
 def test_Yield():
