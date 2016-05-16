@@ -209,6 +209,8 @@ def test_BoolOp():
     check('x and y and z')
     check('x or y')
     check('x or y or z')
+    check('x and (y or z)')
+    check('(x and y) or z')
 
 
 def test_Binop():

@@ -104,7 +104,7 @@ class Decompiler(ast.NodeVisitor):
             self.node_stack.pop()
 
     def precedence_of_node(self, node):
-        if isinstance(node, (ast.BinOp, ast.UnaryOp)):
+        if isinstance(node, (ast.BinOp, ast.UnaryOp, ast.BoolOp)):
             return _PRECEDENCE[type(node.op)]
         return _PRECEDENCE.get(type(node), -1)
 
@@ -453,7 +453,7 @@ class Decompiler(ast.NodeVisitor):
     # Expressions
 
     def visit_BoolOp(self, node):
-        my_prec = self.precedence_of_node(node.op)
+        my_prec = self.precedence_of_node(node)
         parent_prec = self.precedence_of_node(self.get_parent_node())
         with self.parenthesize_if(my_prec <= parent_prec):
             op = 'and' if isinstance(node.op, ast.And) else 'or'
@@ -591,7 +591,11 @@ class Decompiler(ast.NodeVisitor):
                 args.append(DoubleStarArg(node.kwargs))
 
             if args:
-                self.write_expression_list(args, need_parens=False)
+                self.write_expression_list(
+                    args,
+                    need_parens=False,
+                    final_separator_if_multiline=False  # it's illegal after *args and **kwargs
+                )
 
             self.write(')')
         finally:

@@ -45,7 +45,6 @@ def test_display():
     delimiters = [
         ('{', '}'),
         ('[', ']'),
-        ('f(', ')'),
         ('\n\nclass Foo(', '):\n    pass')
     ]
     for start, end in delimiters:
@@ -122,3 +121,12 @@ def f(
 ):
     pass
 ''', length_reduction=12)
+
+
+def test_call():
+    check_split('f(a, b, **c)\n', '''f(
+    a,
+    b,
+    **c
+)
+''')
