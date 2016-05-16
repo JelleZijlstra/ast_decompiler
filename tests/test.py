@@ -305,6 +305,9 @@ def test_Str():
     check('"foo"')
     check('u"foo"')
     check('"foo\\"bar"')
+    check('''from __future__ import unicode_literals
+b'foo'
+''')
 
 
 def test_Attribute():

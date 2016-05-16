@@ -95,6 +95,7 @@ class Decompiler(ast.NodeVisitor):
         self.node_stack = []
         self.indentation = indentation
         self.max_line_length = line_length
+        self.has_unicode_literals = False
 
     def visit(self, node):
         self.node_stack.append(node)
@@ -404,6 +405,12 @@ class Decompiler(ast.NodeVisitor):
         self.write_newline()
 
     def visit_ImportFrom(self, node):
+        if (
+            node.module == '__future__' and
+            any(alias.name == 'unicode_literals' for alias in node.names)
+        ):
+            self.has_unicode_literals = True
+
         self.write_indentation()
         self.write('from %s' % ('.' * (node.level or 0)))
         if node.module:
@@ -623,6 +630,8 @@ class Decompiler(ast.NodeVisitor):
         self.write(repr(node.n))
 
     def visit_Str(self, node):
+        if self.has_unicode_literals and isinstance(node.s, str):
+            self.write('b')
         self.write(repr(node.s))
 
     def visit_Attribute(self, node):
