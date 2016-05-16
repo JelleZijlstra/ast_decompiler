@@ -658,7 +658,7 @@ class Decompiler(ast.NodeVisitor):
         else:
             should_parenthesize = not isinstance(
                 self.get_parent_node(),
-                (ast.Expr, ast.Assign, ast.AugAssign, ast.Return, ast.Yield, ast.arguments)
+                (ast.Expr, ast.Assign, ast.AugAssign, ast.Return, ast.Yield)
             )
             with self.parenthesize_if(should_parenthesize):
                 if len(node.elts) == 1:

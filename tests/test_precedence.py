@@ -14,6 +14,8 @@ def test_Yield():
 def test_Tuple():
     check('def f(): return x, y')
     check('def f(): yield x, y')
+    check('def f((a, b)): pass')
+    check('lambda (a, b): None')
     check('[(1, 2)]')
     check('{(1, 2): (3, 4)}')
     check('[(a, b) for f in c, d]')
