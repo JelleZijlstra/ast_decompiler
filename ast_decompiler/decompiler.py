@@ -627,7 +627,13 @@ class Decompiler(ast.NodeVisitor):
         self.write('`')
 
     def visit_Num(self, node):
-        self.write(repr(node.n))
+        if isinstance(node.n, (int, long, float)) and node.n < 0:
+            # needed for precdence to work correctly
+            me = self.node_stack.pop()
+            self.visit(ast.UnaryOp(op=ast.USub(), operand=ast.Num(n=-node.n)))
+            self.node_stack.append(me)
+        else:
+            self.write(repr(node.n))
 
     def visit_Str(self, node):
         if self.has_unicode_literals and isinstance(node.s, str):

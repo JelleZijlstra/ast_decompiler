@@ -56,6 +56,8 @@ def test_UnaryOp():
     check('not not x')
     check('-(not x)')
     check('not (-x)')
+    check('(-1) ** x')
+    check('-((-1)**x)')
 
 
 def test_Call():
