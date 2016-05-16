@@ -299,6 +299,9 @@ def test_Num():
     check('1.0')
     check('1.0e10')
     check('1+2j')
+    check('-2147483648')  # previously had a bug that made us add L
+    check('2147483648')
+    check('1L')
 
 
 def test_Str():

@@ -5,6 +5,7 @@ Implementation of the decompiler class.
 """
 import ast
 from contextlib import contextmanager
+import sys
 
 _OP_TO_STR = {
     ast.Add: '+',
@@ -632,6 +633,9 @@ class Decompiler(ast.NodeVisitor):
             me = self.node_stack.pop()
             self.visit(ast.UnaryOp(op=ast.USub(), operand=ast.Num(n=-node.n)))
             self.node_stack.append(me)
+        elif isinstance(node.n, long) and node.n > sys.maxint:
+            # don't need to write the L
+            self.write(str(node.n))
         else:
             self.write(repr(node.n))
 
