@@ -84,8 +84,7 @@ def decompile(ast, indentation=4, line_length=100):
 
     """
     decompiler = Decompiler(indentation=indentation, line_length=line_length)
-    decompiler.visit(ast)
-    return ''.join(decompiler.lines)
+    return decompiler.run(ast)
 
 
 class Decompiler(ast.NodeVisitor):
@@ -97,6 +96,13 @@ class Decompiler(ast.NodeVisitor):
         self.indentation = indentation
         self.max_line_length = line_length
         self.has_unicode_literals = False
+
+    def run(self, ast):
+        self.visit(ast)
+        if self.current_line:
+            self.lines.append(''.join(self.current_line))
+            self.current_line = []
+        return ''.join(self.lines)
 
     def visit(self, node):
         self.node_stack.append(node)

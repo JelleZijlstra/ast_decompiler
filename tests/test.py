@@ -1,4 +1,11 @@
+import ast
+from ast_decompiler import decompile
 from tests import check
+
+
+def test_non_module():
+    assert '3' == decompile(ast.Num(n=3))
+    assert '1 + 1' == decompile(ast.BinOp(op=ast.Add(), left=ast.Num(n=1), right=ast.Num(n=1)))
 
 
 def test_FunctionDef():
