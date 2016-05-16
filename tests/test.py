@@ -301,7 +301,12 @@ def test_Num():
     check('1+2j')
     check('-2147483648')  # previously had a bug that made us add L
     check('2147483648')
+    check('-2147483648L')
+    check('2147483648L')
     check('1L')
+    check('1e1000')  # check that we don't turn it info inf
+    check('-1e1000')
+    check('-(1)')
 
 
 def test_Str():
@@ -315,10 +320,13 @@ b'foo'
 
 def test_Attribute():
     check('a.b')
+    check('(1).b')
+    check('(-0j).b')
 
 
 def test_Subscript():
     check('x[y]')
+    check('(-0j)[y]')
 
 
 def test_Name():
@@ -347,6 +355,15 @@ def test_Slice():
 def test_ExtSlice():
     check('x[:, :]')
     check('x[1:, :1]')
+    check('x[1:,]')
+
+
+def test_Ellipsis():
+    # one of these generates an Index ast node and the other one doesn't
+    check('self[...]')
+    check('self[Ellipsis]')
+    check('self[..., a]')
+    check('self[Ellipsis, a]')
 
 
 def test_files():

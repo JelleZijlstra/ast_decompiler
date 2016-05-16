@@ -103,7 +103,8 @@ class Decompiler(ast.NodeVisitor):
         try:
             return super(Decompiler, self).visit(node)
         finally:
-            self.node_stack.pop()
+            if self.node_stack:
+                self.node_stack.pop()
 
     def precedence_of_node(self, node):
         if isinstance(node, (ast.BinOp, ast.UnaryOp, ast.BoolOp)):
@@ -347,12 +348,12 @@ class Decompiler(ast.NodeVisitor):
     def visit_Delete(self, node):
         self.write_indentation()
         self.write('del ')
-        self.write_expression_list(node.targets)
+        self.write_expression_list(node.targets, allow_newlines=False)
         self.write_newline()
 
     def visit_Assign(self, node):
         self.write_indentation()
-        self.write_expression_list(node.targets, separator=' = ')
+        self.write_expression_list(node.targets, separator=' = ', allow_newlines=False)
         self.write(' = ')
         self.visit(node.value)
         self.write_newline()
@@ -402,7 +403,7 @@ class Decompiler(ast.NodeVisitor):
     def visit_Import(self, node):
         self.write_indentation()
         self.write('import ')
-        self.write_expression_list(node.names)
+        self.write_expression_list(node.names, allow_newlines=False)
         self.write_newline()
 
     def visit_ImportFrom(self, node):
@@ -434,8 +435,7 @@ class Decompiler(ast.NodeVisitor):
 
     def visit_Global(self, node):
         self.write_indentation()
-        self.write('global ')
-        self.write_expression_list([ast.Name(id=name) for name in node.names])
+        self.write('global %s' % ', '.join(node.names))
         self.write_newline()
 
     def visit_Expr(self, node):
@@ -502,7 +502,7 @@ class Decompiler(ast.NodeVisitor):
     def visit_Lambda(self, node):
         should_parenthesize = isinstance(
             self.get_parent_node(),
-            (ast.BinOp, ast.UnaryOp, ast.Compare, ast.IfExp, ast.Attribute, ast.Subscript, ast.Call)
+            (ast.BinOp, ast.UnaryOp, ast.Compare, ast.IfExp, ast.Attribute, ast.Subscript, ast.Call, ast.BoolOp)
         )
         with self.parenthesize_if(should_parenthesize):
             self.write('lambda')
@@ -516,7 +516,7 @@ class Decompiler(ast.NodeVisitor):
         parent_node = self.get_parent_node()
         if isinstance(parent_node,
                       (ast.BinOp, ast.UnaryOp, ast.Compare, ast.Attribute, ast.Subscript,
-                       ast.Call)):
+                       ast.Call, ast.BoolOp, ast.comprehension)):
             should_parenthesize = True
         elif isinstance(parent_node, ast.IfExp) and \
                 (node is parent_node.test or node is parent_node.body):
@@ -628,16 +628,31 @@ class Decompiler(ast.NodeVisitor):
         self.write('`')
 
     def visit_Num(self, node):
-        if isinstance(node.n, (int, long, float)) and node.n < 0:
-            # needed for precdence to work correctly
-            me = self.node_stack.pop()
-            self.visit(ast.UnaryOp(op=ast.USub(), operand=ast.Num(n=-node.n)))
-            self.node_stack.append(me)
-        elif isinstance(node.n, long) and node.n > sys.maxint:
-            # don't need to write the L
-            self.write(str(node.n))
-        else:
-            self.write(repr(node.n))
+        should_parenthesize = isinstance(node.n, int) and node.n >= 0 and \
+            isinstance(self.get_parent_node(), ast.Attribute)
+        should_parenthesize = should_parenthesize or (isinstance(node.n, complex) and
+            node.n.real == 0.0 and (node.n.imag < 0 or node.n.imag == -0.0))
+        if not should_parenthesize:
+            parent_node = self.get_parent_node()
+            should_parenthesize = isinstance(parent_node, ast.UnaryOp) and \
+                isinstance(parent_node.op, ast.USub) and \
+                hasattr(parent_node, 'lineno')
+        with self.parenthesize_if(should_parenthesize):
+            if isinstance(node.n, float) and abs(node.n) > sys.float_info.max:
+                # otherwise we write inf, which won't be parsed back right
+                # I don't know of any way to write nan with a literal
+                self.write('1e1000' if node.n > 0 else '-1e1000')
+            elif isinstance(node.n, (int, long, float)) and node.n < 0:
+                # needed for precedence to work correctly
+                me = self.node_stack.pop()
+                if isinstance(node.n, int):
+                    val = str(-node.n)
+                else:
+                    val = repr(type(node.n)(-node.n))  # - of long may be int
+                self.visit(ast.UnaryOp(op=ast.USub(), operand=ast.Name(id=val)))
+                self.node_stack.append(me)
+            else:
+                self.write(repr(node.n))
 
     def visit_Str(self, node):
         if self.has_unicode_literals and isinstance(node.s, str):
@@ -680,7 +695,11 @@ class Decompiler(ast.NodeVisitor):
     # slice
 
     def visit_Ellipsis(self, node):
-        self.write('Ellipsis')
+        if isinstance(self.get_parent_node(), (ast.Subscript, ast.ExtSlice)):
+            # self[...] gets parsed into Ellipsis without an intervening Index node
+            self.write('...')
+        else:
+            self.write('Ellipsis')
 
     def visit_Slice(self, node):
         if node.lower:
@@ -693,7 +712,11 @@ class Decompiler(ast.NodeVisitor):
             self.visit(node.step)
 
     def visit_ExtSlice(self, node):
-        self.write_expression_list(node.dims, need_parens=False)
+        if len(node.dims) == 1:
+            self.visit(node.dims[0])
+            self.write(',')
+        else:
+            self.write_expression_list(node.dims, need_parens=False)
 
     def visit_Index(self, node):
         self.visit(node.value)

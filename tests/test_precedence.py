@@ -30,6 +30,8 @@ def test_Lambda():
     check('lambda x: lambda y: x + y')
     check('lambda x: y if z else x')
     check('(lambda x: y) if z else x')
+    check('x or (lambda x: x)')
+    check('1 + (lambda x: x)')
 
 
 def test_IfExp():
@@ -39,6 +41,10 @@ def test_IfExp():
     check('y if x else (z if a else b)')
     check('(y if x else z) if a else b')
     check('y if (x if z else a) else b')
+    check('(a and b) if c else d')
+    check('a and b if c else d')
+    check('a and (b if c else d)')
+    check('[x for x in (y if z else x)]')
 
 
 def test_BinOp():
