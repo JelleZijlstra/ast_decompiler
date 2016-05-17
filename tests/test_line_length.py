@@ -6,15 +6,6 @@ def check_split(original, multiline, length_reduction=2):
     assert_decompiles(original, multiline, line_length=len(original.strip()) - length_reduction)
 
 
-def test_indentation():
-    assert_decompiles('''
-if x:
-    pass
-''', '''if x:
- pass
-''', indentation=1)
-
-
 def test_with_prefix():
     prefixes = [
         'from x import',

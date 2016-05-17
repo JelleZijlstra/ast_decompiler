@@ -73,7 +73,7 @@ _PRECEDENCE = {
 }
 
 
-def decompile(ast, indentation=4, line_length=100):
+def decompile(ast, indentation=4, line_length=100, starting_indentation=0):
     """Decompiles an AST into Python code.
 
     Arguments:
@@ -81,18 +81,23 @@ def decompile(ast, indentation=4, line_length=100):
     - indentation: indentation level of lines
     - line_length: if lines become longer than this length, ast_decompiler will try to break them up
       (but it will not necessarily succeed in all cases)
+    - starting_indentation: indentation level at which to start producing code
 
     """
-    decompiler = Decompiler(indentation=indentation, line_length=line_length)
+    decompiler = Decompiler(
+        indentation=indentation,
+        line_length=line_length,
+        starting_indentation=starting_indentation,
+    )
     decompiler.visit(ast)
     return ''.join(decompiler.lines)
 
 
 class Decompiler(ast.NodeVisitor):
-    def __init__(self, indentation, line_length):
+    def __init__(self, indentation, line_length, starting_indentation):
         self.lines = []
         self.current_line = []
-        self.current_indentation = 0
+        self.current_indentation = starting_indentation
         self.node_stack = []
         self.indentation = indentation
         self.max_line_length = line_length
