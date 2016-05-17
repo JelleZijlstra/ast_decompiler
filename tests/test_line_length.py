@@ -9,9 +9,6 @@ def check_split(original, multiline, length_reduction=2):
 def test_with_prefix():
     prefixes = [
         'from x import',
-        'import',
-        'del',
-        'global',
     ]
     for prefix in prefixes:
         check_split("%s a, b, c\n" % prefix, '''%s (
@@ -20,6 +17,21 @@ def test_with_prefix():
     c,
 )
 ''' % prefix)
+
+
+def test_del():
+    original = 'del a, b, c\n'
+    check_split(original, original, length_reduction=10)
+
+
+def test_import():
+    original = 'import a, b, c, d\n'
+    check_split(original, original, length_reduction=10)
+
+
+def test_global():
+    original = 'global a, b, c, d\n'
+    check_split(original, original, length_reduction=10)
 
 
 def test_boolop():
@@ -57,6 +69,9 @@ def test_assign():
     c,
 ) = lst
 ''', length_reduction=7)
+    
+    original = 'a = b = c = 3\n'
+    check_split(original, original, length_reduction=3)
 
 
 def test_tuple():

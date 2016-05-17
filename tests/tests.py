@@ -38,6 +38,7 @@ def check(code):
 def assert_decompiles(code, result, **kwargs):
     """Asserts that code, when parsed, decompiles into result."""
     decompile_result = decompile(ast.parse(code), **kwargs)
+    check(decompile_result)
     if result != decompile_result:
         print '>>> expected'
         print result
