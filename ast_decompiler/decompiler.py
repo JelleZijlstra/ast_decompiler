@@ -162,7 +162,8 @@ class Decompiler(ast.NodeVisitor):
             else:
                 self.write(separator)
             self.visit(node)
-            if allow_newlines and self.current_line_length() > self.max_line_length:
+            if allow_newlines and (self.current_line_length() > self.max_line_length or
+                                   last_line != len(self.lines)):
                 break
         else:
             return  # stayed within the limit

@@ -12,4 +12,4 @@ if x:
 
 def test_starting_indentation():
     assert_decompiles('''3''', '''    3
-''', starting_indentation=4)
+''', starting_indentation=4, do_check=False)

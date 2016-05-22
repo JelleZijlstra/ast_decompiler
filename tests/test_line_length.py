@@ -69,7 +69,7 @@ def test_assign():
     c,
 ) = lst
 ''', length_reduction=7)
-    
+
     original = 'a = b = c = 3\n'
     check_split(original, original, length_reduction=3)
 
@@ -136,3 +136,11 @@ def test_call():
     **c
 )
 ''')
+
+
+def test_nesting():
+    check_split('f(f(a, b, c), g(d, e, f))\n', '''f(
+    f(a, b, c),
+    g(d, e, f)
+)
+''', length_reduction=9)
