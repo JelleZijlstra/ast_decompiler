@@ -1,10 +1,14 @@
-from tests import assert_decompiles
+from tests import assert_decompiles, only_on_version
 
 
 def test_With():
     assert_decompiles('with x as y, a as b: pass', '''with x as y, a as b:
     pass
 ''')
+
+
+@only_on_version(2)
+def test_With_collapsed():
     assert_decompiles('''
 with x as y:
     with a as b:
@@ -21,18 +25,22 @@ try:
 except Exception as e:
     pass
 else:
-    print 3
+    z = 3
 finally:
-    print 4
+    z = 4
 ''', '''try:
     1 / 0
 except Exception as e:
     pass
 else:
-    print 3
+    z = 3
 finally:
-    print 4
+    z = 4
 ''')
+
+
+@only_on_version(2)
+def test_TryFinally_collapsed():
     assert_decompiles('''
 try:
     try:
@@ -40,13 +48,13 @@ try:
     except Exception as e:
         pass
 finally:
-    print 4
+    z = 4
 ''', '''try:
     1 / 0
 except Exception as e:
     pass
 finally:
-    print 4
+    z = 4
 ''')
 
 

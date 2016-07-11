@@ -1,6 +1,6 @@
 import ast
 from ast_decompiler import decompile
-from tests import check
+from tests import check, only_on_version
 
 
 def test_non_module():
@@ -55,6 +55,7 @@ def test_AugAssign():
     check('y *= 5')
 
 
+@only_on_version(2)
 def test_Print():
     check('print')
     check('print >>sys.stderr')
@@ -70,7 +71,7 @@ def test_For():
 for x in y:
     pass
 else:
-    print 3
+    z = 3
 ''')
 
 
@@ -117,6 +118,10 @@ with x as y:
 def test_Raise():
     check('raise')
     check('raise e')
+
+
+@only_on_version(2)
+def test_Raise_old_syntax():
     check('raise TypeError, e')
     check('raise TypeError, e, tb')
 
@@ -184,6 +189,7 @@ def test_ImportFrom():
     check('from ....... import bar as foo')
 
 
+@only_on_version(2)
 def test_Exec():
     check('exec "hello"')
     check('exec "hello" in {}')
@@ -280,6 +286,10 @@ def test_Yield():
     check('def f(): yield')
     check('def f(): yield 3')
     check('def f(): x = yield 3')
+
+
+@only_on_version(2)
+def test_Yield_in_print():
     check('def f(): print (yield 4)')
 
 
@@ -297,6 +307,7 @@ def test_Call():
     check('f(foo, *args, **kwargs)')
 
 
+@only_on_version(2)
 def test_Repr():
     check('`foo`')
 
@@ -308,12 +319,16 @@ def test_Num():
     check('1+2j')
     check('-2147483648')  # previously had a bug that made us add L
     check('2147483648')
-    check('-2147483648L')
-    check('2147483648L')
-    check('1L')
     check('1e1000')  # check that we don't turn it info inf
     check('-1e1000')
     check('-(1)')
+
+
+@only_on_version(2)
+def test_longs():
+    check('-2147483648L')
+    check('2147483648L')
+    check('1L')
 
 
 def test_Str():

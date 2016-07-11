@@ -7,6 +7,16 @@ import ast
 from contextlib import contextmanager
 import sys
 
+try:
+    _basestring = basestring
+    _long = long
+    PY3 = False
+except NameError:
+    # py3
+    _basestring = str
+    _long = int
+    PY3 = True
+
 _OP_TO_STR = {
     ast.Add: '+',
     ast.Sub: '-',
@@ -72,6 +82,10 @@ _PRECEDENCE = {
     ast.Attribute: 12,
 }
 
+if hasattr(ast, 'MatMult'):
+    _OP_TO_STR[ast.MatMult] = '@'
+    _PRECEDENCE[ast.MatMult] = 9  # same as multiplication
+
 
 def decompile(ast, indentation=4, line_length=100, starting_indentation=0):
     """Decompiles an AST into Python code.
@@ -129,7 +143,7 @@ class Decompiler(ast.NodeVisitor):
             return None
 
     def write(self, code):
-        assert isinstance(code, basestring), 'invalid code %r' % code
+        assert isinstance(code, _basestring), 'invalid code %r' % code
         self.current_line.append(code)
 
     def write_indentation(self):
@@ -226,6 +240,12 @@ class Decompiler(ast.NodeVisitor):
     # Multi-line statements
 
     def visit_FunctionDef(self, node):
+        self.write_function_def(node)
+
+    def visit_AsyncFunctionDef(self, node):
+        self.write_function_def(node, is_async=True)
+
+    def write_function_def(self, node, is_async=False):
         self.write_newline()
         for decorator in node.decorator_list:
             self.write_indentation()
@@ -234,9 +254,15 @@ class Decompiler(ast.NodeVisitor):
             self.write_newline()
 
         self.write_indentation()
+        if is_async:
+            self.write('async ')
         self.write('def %s(' % node.name)
         self.visit(node.args)
-        self.write('):')
+        self.write(')')
+        if getattr(node, 'returns', None):
+            self.write(' -> ')
+            self.visit(node.returns)
+        self.write(':')
         self.write_newline()
 
         self.write_suite(node.body)
@@ -252,13 +278,22 @@ class Decompiler(ast.NodeVisitor):
 
         self.write_indentation()
         self.write('class %s(' % node.name)
-        self.write_expression_list(node.bases, need_parens=False)
+        exprs = node.bases + getattr(node, 'keywords', [])
+        self.write_expression_list(exprs, need_parens=False)
         self.write('):')
         self.write_newline()
         self.write_suite(node.body)
 
     def visit_For(self, node):
+        self.write_for(node)
+
+    def visit_AsyncFor(self, node):
+        self.write_for(node, is_async=True)
+
+    def write_for(self, node, is_async=False):
         self.write_indentation()
+        if is_async:
+            self.write('async ')
         self.write('for ')
         self.visit(node.target)
         self.write(' in ')
@@ -302,6 +337,9 @@ class Decompiler(ast.NodeVisitor):
             self.write_suite(orelse)
 
     def visit_With(self, node):
+        if hasattr(node, 'items'):
+            self.write_py3_with(node)
+            return
         self.write_indentation()
         self.write('with ')
         nodes = [node]
@@ -325,6 +363,31 @@ class Decompiler(ast.NodeVisitor):
         self.write_newline()
         self.write_suite(body)
 
+    def visit_AsyncWith(self, node):
+        self.write_py3_with(node, is_async=True)
+
+    def write_py3_with(self, node, is_async=False):
+        self.write_indentation()
+        if is_async:
+            self.write('async ')
+        self.write('with ')
+        self.write_expression_list(node.items, allow_newlines=False)
+        self.write(':')
+        self.write_newline()
+        self.write_suite(node.body)
+
+    def visit_withitem(self, node):
+        self.visit(node.context_expr)
+        if node.optional_vars:
+            self.write(' as ')
+            self.visit(node.optional_vars)
+
+    def visit_Try(self, node):
+        # py3 only
+        self.visit_TryExcept(node)
+        if node.finalbody:
+            self.write_finalbody(node.finalbody)
+
     def visit_TryExcept(self, node):
         self.write_indentation()
         self.write('try:')
@@ -342,10 +405,13 @@ class Decompiler(ast.NodeVisitor):
             self.write('try:')
             self.write_newline()
             self.write_suite(node.body)
+        self.write_finalbody(node.finalbody)
+
+    def write_finalbody(self, body):
         self.write_indentation()
         self.write('finally:')
         self.write_newline()
-        self.write_suite(node.finalbody)
+        self.write_suite(body)
 
     # One-line statements
 
@@ -397,10 +463,19 @@ class Decompiler(ast.NodeVisitor):
     def visit_Raise(self, node):
         self.write_indentation()
         self.write('raise')
-        expressions = [child for child in (node.type, node.inst, node.tback) if child]
-        if expressions:
-            self.write(' ')
-            self.write_expression_list(expressions, allow_newlines=False)
+        if hasattr(node, 'exc'):
+            # py3
+            if node.exc is not None:
+                self.write(' ')
+                self.visit(node.exc)
+                if node.cause is not None:
+                    self.write(' from ')
+                    self.visit(node.cause)
+        else:
+            expressions = [child for child in (node.type, node.inst, node.tback) if child]
+            if expressions:
+                self.write(' ')
+                self.write_expression_list(expressions, allow_newlines=False)
         self.write_newline()
 
     def visit_Assert(self, node):
@@ -448,6 +523,11 @@ class Decompiler(ast.NodeVisitor):
     def visit_Global(self, node):
         self.write_indentation()
         self.write('global %s' % ', '.join(node.names))
+        self.write_newline()
+
+    def visit_Nonlocal(self, node):
+        self.write_indentation()
+        self.write('nonlocal %s' % ', '.join(node.names))
         self.write_newline()
 
     def visit_Expr(self, node):
@@ -579,6 +659,12 @@ class Decompiler(ast.NodeVisitor):
         self.write_expression_list([node.elt] + node.generators, separator=' ', need_parens=False)
         self.write(end)
 
+    def visit_Await(self, node):
+        with self.parenthesize_if(
+                not isinstance(self.get_parent_node(), (ast.Expr, ast.Assign, ast.AugAssign))):
+            self.write('await ')
+            self.visit(node.value)
+
     def visit_Yield(self, node):
         with self.parenthesize_if(
                 not isinstance(self.get_parent_node(), (ast.Expr, ast.Assign, ast.AugAssign))):
@@ -586,6 +672,12 @@ class Decompiler(ast.NodeVisitor):
             if node.value:
                 self.write(' ')
                 self.visit(node.value)
+
+    def visit_YieldFrom(self, node):
+        with self.parenthesize_if(
+                not isinstance(self.get_parent_node(), (ast.Expr, ast.Assign, ast.AugAssign))):
+            self.write('yield from ')
+            self.visit(node.value)
 
     def visit_Compare(self, node):
         my_prec = self.precedence_of_node(node)
@@ -605,9 +697,9 @@ class Decompiler(ast.NodeVisitor):
         self.node_stack.append(_CallArgs())
         try:
             args = node.args + node.keywords
-            if node.starargs:
+            if hasattr(node, 'starargs') and node.starargs:
                 args.append(StarArg(node.starargs))
-            if node.kwargs:
+            if hasattr(node, 'kwargs') and node.kwargs:
                 args.append(DoubleStarArg(node.kwargs))
 
             if args:
@@ -654,7 +746,7 @@ class Decompiler(ast.NodeVisitor):
                 # otherwise we write inf, which won't be parsed back right
                 # I don't know of any way to write nan with a literal
                 self.write('1e1000' if node.n > 0 else '-1e1000')
-            elif isinstance(node.n, (int, long, float)) and node.n < 0:
+            elif isinstance(node.n, (int, _long, float)) and node.n < 0:
                 # needed for precedence to work correctly
                 me = self.node_stack.pop()
                 if isinstance(node.n, int):
@@ -671,6 +763,35 @@ class Decompiler(ast.NodeVisitor):
             self.write('b')
         self.write(repr(node.s))
 
+    def visit_FormattedValue(self, node):
+        # TODO figure out escaping in f-strings
+        self.write('{')
+        self.visit(node.value)
+        if node.conversion != -1:
+            self.write('!%s' % chr(node.conversion))
+        if node.format_spec is not None:
+            self.write(':')
+            self.visit(node.format_spec)
+
+    def visit_JoinedStr(self, node):
+        self.write("f'")
+        for value in node.values:
+            if isinstance(value, ast.Str):
+                self.write(value.s)
+            else:
+                self.visit(value)
+        self.write("'")
+
+    def visit_Bytes(self, node):
+        self.write(repr(node.s))
+
+    def visit_NameConstant(self, node):
+        self.write(repr(node.value))
+
+    def visit_Constant(self, node):
+        # TODO what is this
+        raise NotImplementedError(ast.dump(node))
+
     def visit_Attribute(self, node):
         self.visit(node.value)
         self.write('.%s' % node.attr)
@@ -681,8 +802,16 @@ class Decompiler(ast.NodeVisitor):
         self.visit(node.slice)
         self.write(']')
 
+    def visit_Starred(self, node):
+        # TODO precedence
+        self.write('*')
+        self.visit(node.value)
+
     def visit_Name(self, node):
-        self.write(node.id)
+        if isinstance(node.id, _basestring):
+            self.write(node.id)
+        else:
+            self.visit(node.id)
 
     def visit_List(self, node):
         self.write('[')
@@ -707,7 +836,9 @@ class Decompiler(ast.NodeVisitor):
     # slice
 
     def visit_Ellipsis(self, node):
-        if isinstance(self.get_parent_node(), (ast.Subscript, ast.ExtSlice)):
+        if PY3:
+            self.write('...')
+        elif isinstance(self.get_parent_node(), (ast.Subscript, ast.ExtSlice)):
             # self[...] gets parsed into Ellipsis without an intervening Index node
             self.write('...')
         else:
@@ -759,7 +890,11 @@ class Decompiler(ast.NodeVisitor):
             self.visit(node.type)
             if node.name:
                 self.write(' as ')
-                self.visit(node.name)
+                # node.name is a string in py3 but an expr in py2
+                if isinstance(node.name, _basestring):
+                    self.write(node.name)
+                else:
+                    self.visit(node.name)
         self.write(':')
         self.write_newline()
         self.write_suite(node.body)
@@ -772,11 +907,26 @@ class Decompiler(ast.NodeVisitor):
         else:
             args = list(node.args)
             default_args = []
-
         for name, value in default_args:
             args.append(KeywordArg(name, value))
+
         if node.vararg:
             args.append(StarArg(ast.Name(id=node.vararg)))
+
+        # TODO write a * if there are kwonly args but no vararg
+        if hasattr(node, 'kw_defaults'):
+            if node.kwonlyargs and not node.vararg:
+                args.append(StarArg(ast.Name(id='')))
+            num_kwarg_defaults = len(node.kw_defaults)
+            if num_kwarg_defaults:
+                args += node.kwonlyargs[:-num_kwarg_defaults]
+                default_kwargs = zip(node.kwonlyargs[-num_kwarg_defaults:], node.kw_defaults)
+            else:
+                args += node.kwonlyargs
+                default_kwargs = []
+            for name, value in default_kwargs:
+                args.append(KeywordArg(name, value))
+
         if node.kwarg:
             args.append(DoubleStarArg(ast.Name(id=node.kwarg)))
 
@@ -790,8 +940,19 @@ class Decompiler(ast.NodeVisitor):
                 final_separator_if_multiline=False  # illegal after **kwargs
             )
 
+    def visit_arg(self, node):
+        self.write(node.arg)
+        if node.annotation:
+            self.write(': ')
+            # TODO precedence
+            self.visit(node.annotation)
+
     def visit_keyword(self, node):
-        self.write(node.arg + '=')
+        if node.arg is None:
+            # in py3, **kwargs is a keyword whose arg is None
+            self.write('**')
+        else:
+            self.write(node.arg + '=')
         self.visit(node.value)
 
     def visit_alias(self, node):

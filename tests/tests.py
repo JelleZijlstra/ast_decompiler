@@ -7,6 +7,9 @@ Helpers for tests.
 import ast
 from ast_decompiler import decompile
 import difflib
+import sys
+
+VERSION = sys.version_info.major
 
 
 def check(code):
@@ -16,22 +19,22 @@ def check(code):
     try:
         new_tree = ast.parse(new_code)
     except SyntaxError as e:
-        print '>>> syntax error:'
+        print('>>> syntax error:')
         lineno = e.lineno - 1
         min_lineno = max(0, lineno - 3)
         max_lineno = lineno + 3
         for line in new_code.splitlines()[min_lineno:max_lineno]:
-            print line
+            print(line)
         raise
 
     dumped = ast.dump(ast.parse(code))
     new_dumped = ast.dump(new_tree)
 
     if dumped != new_dumped:
-        print code
-        print new_code
+        print(code)
+        print(new_code)
         for line in difflib.unified_diff(dumped.split(), new_dumped.split()):
-            print line
+            print(line)
         assert False, '%s != %s' % (dumped, new_dumped)
 
 
@@ -41,11 +44,22 @@ def assert_decompiles(code, result, do_check=True, **kwargs):
     if do_check:
         check(decompile_result)
     if result != decompile_result:
-        print '>>> expected'
-        print result
-        print '>>> actual'
-        print decompile_result
-        print '>>> diff'
+        print('>>> expected')
+        print(result)
+        print('>>> actual')
+        print(decompile_result)
+        print('>>> diff')
         for line in difflib.unified_diff(result.splitlines(), decompile_result.splitlines()):
-            print line
+            print(line)
         assert False, 'failed to decompile %s' % code
+
+
+def only_on_version(py_version):
+    """Decorator that runs a test only if the Python version matches."""
+    if py_version != VERSION:
+        def decorator(fn):
+            return lambda *args: None
+    else:
+        def decorator(fn):
+            return fn
+    return decorator

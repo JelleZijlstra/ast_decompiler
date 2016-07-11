@@ -1,4 +1,4 @@
-from tests import check
+from tests import check, only_on_version
 
 
 def test_Yield():
@@ -14,16 +14,25 @@ def test_Yield():
 def test_Tuple():
     check('def f(): return x, y')
     check('def f(): yield x, y')
-    check('def f((a, b)): pass')
-    check('lambda (a, b): None')
     check('[(1, 2)]')
     check('{(1, 2): (3, 4)}')
-    check('[(a, b) for f in c, d]')
+    check('[(a, b) for f in (c, d)]')
     check('(a, b) + 3')
     check('lambda x: (a, b)')
     check('x[(1, 2):(3, 4):(5, 6), (7, 8):]')
     check('()')
     check('x,')
+
+
+@only_on_version(2)
+def test_tuple_in_listcomp():
+    check('[(a, b) for f in c, d]')
+
+
+@only_on_version(2)
+def test_Tuple_arg():
+    check('def f((a, b)): pass')
+    check('lambda (a, b): None')
 
 
 def test_Lambda():
