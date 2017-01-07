@@ -63,3 +63,14 @@ def only_on_version(py_version):
         def decorator(fn):
             return fn
     return decorator
+
+
+def skip_before(py_version):
+    """Decorator that skips a test on Python versions before py_version."""
+    if sys.version_info < py_version:
+        def decorator(fn):
+            return lambda *args: None
+    else:
+        def decorator(fn):
+            return fn
+    return decorator

@@ -1,4 +1,4 @@
-from tests import assert_decompiles
+from .tests import assert_decompiles
 
 
 def check_split(original, multiline, length_reduction=2):

@@ -1,7 +1,7 @@
-from tests import check, only_on_version
+from .tests import check, skip_before
 
 
-@only_on_version(3)
+@skip_before((3, 5))
 def test_MatMult():
     check('a @ b')
     check('(a * b) @ c')
@@ -9,7 +9,7 @@ def test_MatMult():
     check('a + (b @ c)')
 
 
-@only_on_version(3)
+@skip_before((3, 5))
 def test_AsyncFunctionDef():
     check('''
 async def f(a, b):
@@ -17,7 +17,7 @@ async def f(a, b):
 ''')
 
 
-@only_on_version(3)
+@skip_before((3, 0))
 def test_annotations():
     # TODO test precedence
     check('''
@@ -26,7 +26,7 @@ def f(a: int, b: str) -> float:
 ''')
 
 
-@only_on_version(3)
+@skip_before((3, 0))
 def test_class_keywords():
     check('''
 class Foo(a=3):
@@ -38,7 +38,7 @@ class WithMeta(metaclass=type):
 ''')
 
 
-@only_on_version(3)
+@skip_before((3, 5))
 def test_AsyncFor():
     check('''
 async def f(y):
@@ -47,7 +47,7 @@ async def f(y):
 ''')
 
 
-@only_on_version(3)
+@skip_before((3, 0))
 def test_py3_with():
     check('''
 with a as b:
@@ -64,7 +64,7 @@ with a as b:
 ''')
 
 
-@only_on_version(3)
+@skip_before((3, 5))
 def test_async_with():
     check('''
 async def f(a):
@@ -73,14 +73,14 @@ async def f(a):
 ''')
 
 
-@only_on_version(3)
+@skip_before((3, 0))
 def test_raise_with_cause():
     check('''
 raise e from ee
 ''')
 
 
-@only_on_version(3)
+@skip_before((3, 0))
 def test_Nonlocal():
     check('''
 def f(x):
@@ -92,7 +92,7 @@ def f(x):
 ''')
 
 
-@only_on_version(3)
+@skip_before((3, 5))
 def test_Await():
     check('''
 async def f(x):
@@ -116,7 +116,7 @@ async def f(x):
 ''')
 
 
-@only_on_version(3)
+@skip_before((3, 0))
 def test_YieldFrom():
     check('yield from x')
     check('1 + (yield from x)')
@@ -125,29 +125,29 @@ def test_YieldFrom():
     check('return 3, (yield from x)')
 
 
-@only_on_version(3)
+@skip_before((3, 6))
 def test_FormattedValue():
     # TODO more
     check('f"a"')
 
 
-@only_on_version(3)
+@skip_before((3, 0))
 def test_Bytes():
     check('b"a"')
 
 
-@only_on_version(3)
+@skip_before((3, 0))
 def test_NameConstant():
     check('True')
 
 
-@only_on_version(3)
+@skip_before((3, 0))
 def test_Starred():
     check('a, *b = 3')
     check('[a, *b]')
 
 
-@only_on_version(3)
+@skip_before((3, 0))
 def test_kwonlyargs():
     check('def f(a, *, b=3): pass')
     check('def f(a, *args, b=3): pass')

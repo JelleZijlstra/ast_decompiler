@@ -1,6 +1,6 @@
 import ast
 from ast_decompiler import decompile
-from tests import check, only_on_version
+from .tests import check, only_on_version
 
 
 def test_non_module():

@@ -1,4 +1,4 @@
-from tests import assert_decompiles
+from .tests import assert_decompiles
 
 
 def test_indentation():

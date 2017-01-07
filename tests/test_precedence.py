@@ -1,4 +1,4 @@
-from tests import check, only_on_version
+from .tests import check, only_on_version
 
 
 def test_Yield():
