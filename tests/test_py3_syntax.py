@@ -153,3 +153,17 @@ def test_kwonlyargs():
     check('def f(a, *args, b=3): pass')
     check('def f(a, *args, b=3, **kwargs): pass')
 
+
+@skip_before((3, 6))
+def test_annassign():
+    check("a: int")
+    check("a: int = 3")
+    check("(a): int")
+    check("""
+class A:
+    b: int
+""")
+    check("""
+def f():
+    a: int
+""")
