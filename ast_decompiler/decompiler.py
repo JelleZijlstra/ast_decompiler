@@ -778,14 +778,21 @@ class Decompiler(ast.NodeVisitor):
         self.write(repr(node.s))
 
     def visit_FormattedValue(self, node):
-        # TODO figure out escaping in f-strings
+        has_parent = isinstance(self.get_parent_node(), ast.JoinedStr)
+        if not has_parent:
+            self.write('f"')
         self.write('{')
         self.visit(node.value)
         if node.conversion != -1:
             self.write('!%s' % chr(node.conversion))
         if node.format_spec is not None:
             self.write(':')
-            self.visit(node.format_spec)
+            if not isinstance(node.format_spec, ast.Str):
+                raise TypeError('format spec must be a string')
+            self.write(node.format_spec.s)
+        self.write('}')
+        if not has_parent:
+            self.write('"')
 
     def visit_JoinedStr(self, node):
         self.write("f'")

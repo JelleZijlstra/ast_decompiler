@@ -17,6 +17,22 @@ async def f(a, b):
 ''')
 
 
+@skip_before((3, 6))
+def test_async_gen():
+    check('''
+async def f():
+    yield
+''')
+
+
+@skip_before((3, 6))
+def test_async_comprehensions():
+    check('''
+async def f(lst):
+    return [await x for x in lst]
+''')
+
+
 @skip_before((3, 0))
 def test_annotations():
     # TODO test precedence
@@ -127,8 +143,15 @@ def test_YieldFrom():
 
 @skip_before((3, 6))
 def test_FormattedValue():
-    # TODO more
     check('f"a"')
+    check('f"{b}"')
+    check('f"{b}a"')
+    check('f"{b!r}"')
+    check('f"{b:a}"')
+    check('f"{b!r:a}"')
+    check('f"{\'b\'!r:\'a\'}"')
+    check('f"{a}b{c!a}s"')
+    check('f"{a.b}c{d()}"')
 
 
 @skip_before((3, 0))
