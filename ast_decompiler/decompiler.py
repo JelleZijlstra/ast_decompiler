@@ -208,6 +208,15 @@ class Decompiler(ast.NodeVisitor):
             for line in nodes:
                 self.visit(line)
 
+    def write_strings(self, *strings):
+        """
+        Write each string as-is on a new line with an appropriate intendation.
+        """
+        for s in strings:
+            self.write_indentation()
+            self.write(s.strip())
+            self.write_newline()
+
     @contextmanager
     def add_indentation(self):
         self.current_indentation += self.indentation
@@ -229,6 +238,11 @@ class Decompiler(ast.NodeVisitor):
         raise NotImplementedError('missing visit method for %r' % node)
 
     def visit_Module(self, node):
+        # Check for docstring.
+        if isinstance(node.body[0], ast.Expr) and isinstance(node.body[0].value, ast.Str):
+            docstring = node.body.pop(0).value.s
+            self.write_strings('"""', docstring, '"""')
+
         for line in node.body:
             self.visit(line)
 
@@ -265,6 +279,12 @@ class Decompiler(ast.NodeVisitor):
         self.write(':')
         self.write_newline()
 
+        # Check for docstring.
+        if isinstance(node.body[0], ast.Expr) and isinstance(node.body[0].value, ast.Str):
+            docstring = node.body.pop(0).value.s
+            with self.add_indentation():
+                self.write_strings('"""', docstring, '"""')
+
         self.write_suite(node.body)
 
     def visit_ClassDef(self, node):
@@ -282,6 +302,13 @@ class Decompiler(ast.NodeVisitor):
         self.write_expression_list(exprs, need_parens=False)
         self.write('):')
         self.write_newline()
+
+        # Check for docstring.
+        if isinstance(node.body[0], ast.Expr) and isinstance(node.body[0].value, ast.Str):
+            docstring = node.body.pop(0).value.s
+            with self.add_indentation():
+                self.write_strings('"""', docstring, '"""')
+
         self.write_suite(node.body)
 
     def visit_For(self, node):
