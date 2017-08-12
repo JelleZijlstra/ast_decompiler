@@ -787,21 +787,27 @@ class Decompiler(ast.NodeVisitor):
             self.write('!%s' % chr(node.conversion))
         if node.format_spec is not None:
             self.write(':')
-            if not isinstance(node.format_spec, ast.Str):
-                raise TypeError('format spec must be a string')
-            self.write(node.format_spec.s)
+            if isinstance(node.format_spec, ast.JoinedStr):
+                self._visit_joinedstr_body(node.format_spec)
+            elif isinstance(node.format_spec, ast.Str):
+                self.write(node.format_spec.s)
+            else:
+                raise TypeError('format spec must be a string, not {}'.format(node.format_spec))
         self.write('}')
         if not has_parent:
             self.write('"')
 
     def visit_JoinedStr(self, node):
-        self.write("f'")
+        self.write('f"')
+        self._visit_joinedstr_body(node)
+        self.write('"')
+
+    def _visit_joinedstr_body(self, node):
         for value in node.values:
             if isinstance(value, ast.Str):
                 self.write(value.s)
             else:
                 self.visit(value)
-        self.write("'")
 
     def visit_Bytes(self, node):
         self.write(repr(node.s))
