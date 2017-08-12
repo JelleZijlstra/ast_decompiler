@@ -1,3 +1,9 @@
+version 0.3.1 (August 11, 2017)
+- Fix handling of f-strings
+
+version 0.3 (January 7, 2017)
+- Support Python 3.6
+
 version 0.2 (July 14, 2016)
 - Support Python 3
 
