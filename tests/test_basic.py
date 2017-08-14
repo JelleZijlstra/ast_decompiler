@@ -235,6 +235,9 @@ def test_Binop():
 def test_UnaryOp():
     check('not x')
     check('+x')
+    check('-1')
+    check('-(1+1j)')
+    assert '-1\n' == decompile(ast.parse('-1'))
 
 
 def test_Lambda():
