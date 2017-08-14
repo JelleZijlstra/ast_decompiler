@@ -55,6 +55,9 @@ class _CallArgs(object):
     Needed to convey the high precedence of the callee but low precedence of the arguments.
 
     """
+    def __init__(self, args):
+        self.args = args
+
 
 _PRECEDENCE = {
     _CallArgs: -1,
@@ -669,7 +672,15 @@ class Decompiler(ast.NodeVisitor):
         self.write('}')
 
     def visit_GeneratorExp(self, node):
-        self.visit_comp(node, '(', ')')
+        parent_node = self.get_parent_node()
+        # if this is the only argument to a function, omit the extra parentheses
+        if (isinstance(parent_node, _CallArgs) and len(parent_node.args) == 1 and
+                node == parent_node.args[0]):
+            start = end = ''
+        else:
+            start = '('
+            end = ')'
+        self.visit_comp(node, start, end)
 
     def visit_comp(self, node, start, end):
         self.write(start)
@@ -711,14 +722,13 @@ class Decompiler(ast.NodeVisitor):
         self.visit(node.func)
         self.write('(')
 
-        self.node_stack.append(_CallArgs())
+        args = node.args + node.keywords
+        if hasattr(node, 'starargs') and node.starargs:
+            args.append(StarArg(node.starargs))
+        if hasattr(node, 'kwargs') and node.kwargs:
+            args.append(DoubleStarArg(node.kwargs))
+        self.node_stack.append(_CallArgs(args))
         try:
-            args = node.args + node.keywords
-            if hasattr(node, 'starargs') and node.starargs:
-                args.append(StarArg(node.starargs))
-            if hasattr(node, 'kwargs') and node.kwargs:
-                args.append(DoubleStarArg(node.kwargs))
-
             if args:
                 self.write_expression_list(
                     args,

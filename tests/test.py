@@ -280,6 +280,8 @@ def test_GeneratorExp():
     check('(x for x in y)')
     check('(x for x in y if z)')
     check('(x for x in y for z in a)')
+    check('f(x for x in y)')
+    assert 'f(x for x in y)\n' == decompile(ast.parse('f(x for x in y)'))
 
 
 def test_Yield():
