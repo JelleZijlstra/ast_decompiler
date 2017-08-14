@@ -266,6 +266,7 @@ def test_ListComp():
     check('[x for x in y]')
     check('[x for x in y if z]')
     check('[x for x in y for z in a]')
+    assert '[a for a, b in x]\n' == decompile(ast.parse('[a for a, b in x]'))
 
 
 def test_SetComp():

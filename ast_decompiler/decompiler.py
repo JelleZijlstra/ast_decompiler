@@ -870,10 +870,13 @@ class Decompiler(ast.NodeVisitor):
         if not node.elts:
             self.write('()')
         else:
+            parent_node = self.get_parent_node()
             should_parenthesize = not isinstance(
-                self.get_parent_node(),
+                parent_node,
                 (ast.Expr, ast.Assign, ast.AugAssign, ast.Return, ast.Yield)
             )
+            if isinstance(parent_node, ast.comprehension) and node is parent_node.target:
+                should_parenthesize = False
             with self.parenthesize_if(should_parenthesize):
                 if len(node.elts) == 1:
                     self.visit(node.elts[0])

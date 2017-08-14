@@ -110,9 +110,9 @@ def test_dict():
 
 
 def test_dictcomp():
-    check_split('{a: b for (a, b) in c}\n', '''{
+    check_split('{a: b for a, b in c}\n', '''{
     a: b
-    for (a, b) in c
+    for a, b in c
 }
 ''')
 
