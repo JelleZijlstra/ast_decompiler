@@ -142,6 +142,9 @@ class Decompiler(ast.NodeVisitor):
         except IndexError:
             return None
 
+    def has_parent_of_type(self, node_type):
+        return any(isinstance(parent, node_type) for parent in self.node_stack)
+
     def write(self, code):
         assert isinstance(code, _basestring), 'invalid code %r' % code
         self.current_line.append(code)
@@ -775,12 +778,19 @@ class Decompiler(ast.NodeVisitor):
     def visit_Str(self, node):
         if self.has_unicode_literals and isinstance(node.s, str):
             self.write('b')
-        self.write(repr(node.s))
+        if sys.version_info >= (3, 6) and self.has_parent_of_type(ast.FormattedValue):
+            delimiter = '"'
+        else:
+            delimiter = "'"
+        self.write(delimiter)
+        s = node.s.encode('unicode-escape').decode('ascii')
+        self.write(s.replace(delimiter, '\\' + delimiter))
+        self.write(delimiter)
 
     def visit_FormattedValue(self, node):
         has_parent = isinstance(self.get_parent_node(), ast.JoinedStr)
         if not has_parent:
-            self.write('f"')
+            self.write("f'")
         self.write('{')
         self.visit(node.value)
         if node.conversion != -1:
@@ -795,17 +805,18 @@ class Decompiler(ast.NodeVisitor):
                 raise TypeError('format spec must be a string, not {}'.format(node.format_spec))
         self.write('}')
         if not has_parent:
-            self.write('"')
+            self.write("'")
 
     def visit_JoinedStr(self, node):
-        self.write('f"')
+        self.write("f'")
         self._visit_joinedstr_body(node)
-        self.write('"')
+        self.write("'")
 
     def _visit_joinedstr_body(self, node):
         for value in node.values:
             if isinstance(value, ast.Str):
-                self.write(value.s)
+                # always escape '
+                self.write(value.s.encode('unicode-escape').decode('ascii').replace("'", r"\'"))
             else:
                 self.visit(value)
 
