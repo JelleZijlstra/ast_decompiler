@@ -801,7 +801,7 @@ class Decompiler(ast.NodeVisitor):
         self.write(delimiter)
 
     def visit_FormattedValue(self, node):
-        has_parent = isinstance(self.get_parent_node(), ast.JoinedStr)
+        has_parent = isinstance(self.get_parent_node(), (ast.JoinedStr, ast.FormattedValue))
         if not has_parent:
             self.write("f'")
         self.write('{')

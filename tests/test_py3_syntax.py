@@ -154,6 +154,7 @@ def test_FormattedValue():
     check('f"{a.b}c{d()}"')
     check("f'{1/3:.1f}'")
     check(r"f'{a}\''")
+    check("f'{1/3:{5}.1}'")
 
 
 @skip_before((3, 0))
