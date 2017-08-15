@@ -786,8 +786,11 @@ class Decompiler(ast.NodeVisitor):
                 self.write(repr(node.n))
 
     def visit_Str(self, node):
-        if self.has_unicode_literals and isinstance(node.s, str):
-            self.write('b')
+        if sys.version_info < (3, 0):
+            if self.has_unicode_literals and isinstance(node.s, str):
+                self.write('b')
+            elif isinstance(node.s, unicode):
+                self.write('u')
         if sys.version_info >= (3, 6) and self.has_parent_of_type(ast.FormattedValue):
             delimiter = '"'
         else:
