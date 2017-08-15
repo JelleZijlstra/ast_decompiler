@@ -763,7 +763,9 @@ class Decompiler(ast.NodeVisitor):
             isinstance(self.get_parent_node(), ast.Attribute)
         should_parenthesize = should_parenthesize or (isinstance(node.n, complex) and
             node.n.real == 0.0 and (node.n.imag < 0 or node.n.imag == -0.0))
-        if not should_parenthesize and (isinstance(node.n, complex) or node.n < 0):
+        # Always parenthesize in Python 2, because there "-(1)" and "-1" produce a different AST.
+        if not should_parenthesize and (isinstance(node.n, complex) or node.n < 0 or
+                                        sys.version_info < (3, 0)):
             parent_node = self.get_parent_node()
             should_parenthesize = isinstance(parent_node, ast.UnaryOp) and \
                 isinstance(parent_node.op, ast.USub) and \
