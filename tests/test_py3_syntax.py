@@ -155,6 +155,10 @@ def test_FormattedValue():
     check("f'{1/3:.1f}'")
     check(r"f'{a}\''")
     check("f'{1/3:{5}.1}'")
+    check("f'{ {a, b, c} }'")
+    check("f'{ {a: b} }'")
+    check("f'{ {a for a in b} }'")
+    check("f'{ {a: b for a, b in c} }'")
 
 
 @skip_before((3, 0))
