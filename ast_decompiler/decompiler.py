@@ -231,6 +231,15 @@ class Decompiler(ast.NodeVisitor):
         else:
             yield
 
+    @contextmanager
+    def f_literalise_if(self, condition):
+        if condition:
+            self.write("f'")
+            yield
+            self.write("'")
+        else:
+            yield
+
     def generic_visit(self, node):
         raise NotImplementedError('missing visit method for %r' % node)
 
@@ -803,37 +812,31 @@ class Decompiler(ast.NodeVisitor):
         self.write(delimiter)
 
     def visit_FormattedValue(self, node):
-        has_parent = isinstance(self.get_parent_node(), (ast.JoinedStr, ast.FormattedValue))
-        if not has_parent:
-            self.write("f'")
-        self.write('{')
-        self.visit(node.value)
-        if node.conversion != -1:
-            self.write('!%s' % chr(node.conversion))
-        if node.format_spec is not None:
-            self.write(':')
-            if isinstance(node.format_spec, ast.JoinedStr):
-                self._visit_joinedstr_body(node.format_spec)
-            elif isinstance(node.format_spec, ast.Str):
-                self.write(node.format_spec.s)
-            else:
-                raise TypeError('format spec must be a string, not {}'.format(node.format_spec))
-        self.write('}')
-        if not has_parent:
-            self.write("'")
+        has_parent = isinstance(self.get_parent_node(), ast.JoinedStr)
+        with self.f_literalise_if(not has_parent):
+            self.write('{')
+            self.visit(node.value)
+            if node.conversion != -1:
+                self.write('!%s' % chr(node.conversion))
+            if node.format_spec is not None:
+                self.write(':')
+                if isinstance(node.format_spec, ast.JoinedStr):
+                    self.visit(node.format_spec)
+                elif isinstance(node.format_spec, ast.Str):
+                    self.write(node.format_spec.s)
+                else:
+                    raise TypeError('format spec must be a string, not {}'.format(node.format_spec))
+            self.write('}')
 
     def visit_JoinedStr(self, node):
-        self.write("f'")
-        self._visit_joinedstr_body(node)
-        self.write("'")
-
-    def _visit_joinedstr_body(self, node):
-        for value in node.values:
-            if isinstance(value, ast.Str):
-                # always escape '
-                self.write(value.s.encode('unicode-escape').decode('ascii').replace("'", r"\'"))
-            else:
-                self.visit(value)
+        has_parent = isinstance(self.get_parent_node(), ast.FormattedValue)
+        with self.f_literalise_if(not has_parent):
+            for value in node.values:
+                if isinstance(value, ast.Str):
+                    # always escape '
+                    self.write(value.s.encode('unicode-escape').decode('ascii').replace("'", r"\'"))
+                else:
+                    self.visit(value)
 
     def visit_Bytes(self, node):
         self.write(repr(node.s))
