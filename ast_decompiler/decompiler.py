@@ -817,6 +817,9 @@ class Decompiler(ast.NodeVisitor):
             self.write('{')
             if isinstance(node.value, ast.JoinedStr):
                 raise NotImplementedError('ast_decompiler does not support nested f-strings yet')
+            add_space = isinstance(node.value, (ast.Set, ast.Dict, ast.SetComp, ast.DictComp))
+            if add_space:
+                self.write(' ')
             self.visit(node.value)
             if node.conversion != -1:
                 self.write('!%s' % chr(node.conversion))
@@ -828,6 +831,8 @@ class Decompiler(ast.NodeVisitor):
                     self.write(node.format_spec.s)
                 else:
                     raise TypeError('format spec must be a string, not {}'.format(node.format_spec))
+            if add_space:
+                self.write(' ')
             self.write('}')
 
     def visit_JoinedStr(self, node):
