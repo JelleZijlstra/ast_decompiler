@@ -815,6 +815,8 @@ class Decompiler(ast.NodeVisitor):
         has_parent = isinstance(self.get_parent_node(), ast.JoinedStr)
         with self.f_literalise_if(not has_parent):
             self.write('{')
+            if isinstance(node.value, ast.JoinedStr):
+                raise NotImplementedError('ast_decompiler does not support nested f-strings yet')
             self.visit(node.value)
             if node.conversion != -1:
                 self.write('!%s' % chr(node.conversion))
