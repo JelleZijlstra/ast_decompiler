@@ -183,6 +183,8 @@ def test_Starred():
 
 @skip_before((3, 0))
 def test_kwonlyargs():
+    check('def f(a, *, b): pass')
+    check('def f(a, *args, b): pass')
     check('def f(a, *, b=3): pass')
     check('def f(a, *args, b=3): pass')
     check('def f(a, *args, b=3, **kwargs): pass')

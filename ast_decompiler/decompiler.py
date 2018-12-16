@@ -759,8 +759,9 @@ class Decompiler(ast.NodeVisitor):
 
     def visit_KeywordArg(self, node):
         self.visit(node.arg)
-        self.write('=')
-        self.visit(node.value)
+        if node.value is not None:
+            self.write('=')
+            self.visit(node.value)
 
     def visit_Repr(self, node):
         self.write('`')
