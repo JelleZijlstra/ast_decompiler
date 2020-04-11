@@ -769,46 +769,54 @@ class Decompiler(ast.NodeVisitor):
         self.write('`')
 
     def visit_Num(self, node):
-        should_parenthesize = isinstance(node.n, int) and node.n >= 0 and \
+        self.write_number(node.n)
+
+    def write_number(self, number):
+        should_parenthesize = isinstance(number, int) and number >= 0 and \
             isinstance(self.get_parent_node(), ast.Attribute)
-        should_parenthesize = should_parenthesize or (isinstance(node.n, complex) and
-            node.n.real == 0.0 and (node.n.imag < 0 or node.n.imag == -0.0))
+        should_parenthesize = should_parenthesize or (isinstance(number, complex) and
+            number.real == 0.0 and (number.imag < 0 or number.imag == -0.0))
         # Always parenthesize in Python 2, because there "-(1)" and "-1" produce a different AST.
-        if not should_parenthesize and (isinstance(node.n, complex) or node.n < 0 or
+        if not should_parenthesize and (isinstance(number, complex) or number < 0 or
                                         sys.version_info < (3, 0)):
             parent_node = self.get_parent_node()
             should_parenthesize = isinstance(parent_node, ast.UnaryOp) and \
                 isinstance(parent_node.op, ast.USub) and \
                 hasattr(parent_node, 'lineno')
         with self.parenthesize_if(should_parenthesize):
-            if isinstance(node.n, float) and abs(node.n) > sys.float_info.max:
+            if isinstance(number, float) and abs(number) > sys.float_info.max:
                 # otherwise we write inf, which won't be parsed back right
                 # I don't know of any way to write nan with a literal
-                self.write('1e1000' if node.n > 0 else '-1e1000')
-            elif isinstance(node.n, (int, _long, float)) and node.n < 0:
+                self.write('1e1000' if number > 0 else '-1e1000')
+            elif isinstance(number, (int, _long, float)) and number < 0:
                 # needed for precedence to work correctly
                 me = self.node_stack.pop()
-                if isinstance(node.n, int):
-                    val = str(-node.n)
+                if isinstance(number, int):
+                    val = str(-number)
                 else:
-                    val = repr(type(node.n)(-node.n))  # - of long may be int
+                    val = repr(type(number)(-number))  # - of long may be int
                 self.visit(ast.UnaryOp(op=ast.USub(), operand=ast.Name(id=val)))
                 self.node_stack.append(me)
             else:
-                self.write(repr(node.n))
+                self.write(repr(number))
 
     def visit_Str(self, node):
+        self.write_string(node.s, kind=None)
+
+    def write_string(self, string_value, kind=None):
         if sys.version_info < (3, 0):
-            if self.has_unicode_literals and isinstance(node.s, str):
-                self.write('b')
-            elif isinstance(node.s, unicode):
-                self.write('u')
+            if self.has_unicode_literals and isinstance(string_value, str):
+                kind = 'b'
+            elif isinstance(string_value, unicode):
+                kind = 'u'
+        if kind is not None:
+            self.write(kind)
         if sys.version_info >= (3, 6) and self.has_parent_of_type(ast.FormattedValue):
             delimiter = '"'
         else:
             delimiter = "'"
         self.write(delimiter)
-        s = node.s.encode('unicode-escape').decode('ascii')
+        s = string_value.encode('unicode-escape').decode('ascii')
         self.write(s.replace(delimiter, '\\' + delimiter))
         self.write(delimiter)
 
@@ -853,8 +861,18 @@ class Decompiler(ast.NodeVisitor):
         self.write(repr(node.value))
 
     def visit_Constant(self, node):
-        # TODO what is this
-        raise NotImplementedError(ast.dump(node))
+        if node.value is Ellipsis:
+            self.write('...')
+        elif isinstance(node.value, str):
+            self.write_string(node.value, node.kind)
+        elif isinstance(node.value, bytes):
+            self.write(repr(node.value))
+        elif isinstance(node.value, (int, float, complex)):
+            self.write_number(node.value)
+        elif isinstance(node.value, (bool, type(None))):
+            self.write(repr(node.value))
+        else:
+            raise NotImplementedError(ast.dump(node))
 
     def visit_Attribute(self, node):
         self.visit(node.value)
