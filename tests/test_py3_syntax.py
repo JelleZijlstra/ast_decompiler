@@ -264,6 +264,7 @@ def f():
 """)
 
 
+@skip_before((3, 4))
 def test_unpacking():
     check("""
 def parse(family):
