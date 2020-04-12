@@ -77,7 +77,7 @@ def skip_before(py_version):
 
 
 def skip_after(py_version):
-    """Decorator that skips a test on Python versions before py_version."""
+    """Decorator that skips a test on Python versions after py_version."""
     if sys.version_info > py_version:
         def decorator(fn):
             return lambda *args: None
