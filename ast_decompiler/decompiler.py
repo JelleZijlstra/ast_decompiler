@@ -959,6 +959,8 @@ class Decompiler(ast.NodeVisitor):
         lambda self, node: None
 
     def visit_comprehension(self, node):
+        if getattr(node, "is_async", False):
+            self.write('async ')
         self.write('for ')
         self.visit(node.target)
         self.write(' in ')

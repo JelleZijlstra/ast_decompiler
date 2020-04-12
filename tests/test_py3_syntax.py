@@ -32,6 +32,13 @@ def test_async_comprehensions():
 async def f(lst):
     return [await x for x in lst]
 ''')
+    check('''
+async def f(lst):
+    a = [x async for x in lst]
+    b = {x async for x in lst}
+    c = {x: x async for x in lst}
+    d = (x async for x in lst)
+''')
 
 
 @skip_before((3, 0))
@@ -227,3 +234,9 @@ def test_async_varname():
 def async(async, await=3):
     return async + await
 """)
+
+
+@skip_before((3, 7))
+def test_async_await_in_fstring():
+    check("f'{await x}'")
+    check("f'{[x async for x in y]}'")
