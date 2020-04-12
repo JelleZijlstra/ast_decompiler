@@ -1,5 +1,5 @@
 # coding: utf-8
-from .tests import check, skip_before
+from .tests import check, skip_before, skip_after
 
 
 @skip_before((3, 5))
@@ -31,6 +31,13 @@ def test_async_comprehensions():
     check('''
 async def f(lst):
     return [await x for x in lst]
+''')
+    check('''
+async def f(lst):
+    a = [x async for x in lst]
+    b = {x async for x in lst}
+    c = {x: x async for x in lst}
+    d = (x async for x in lst)
 ''')
 
 
@@ -203,3 +210,95 @@ class A:
 def f():
     a: int
 """)
+
+
+@skip_before((3, 7))
+def test_future_annotations():
+    # This doesn't really affect ast_decompiler because the __future__
+    # import doesn't change the AST.
+    check("""
+from __future__ import annotations
+
+def f(x: int) -> str:
+    pass
+
+y: float
+""")
+
+
+@skip_after((3, 6))
+def test_async_varname():
+    check("import async")
+    check("await = 3")
+    check("""
+def async(async, await=3):
+    return async + await
+""")
+
+
+@skip_before((3, 7))
+def test_async_await_in_fstring():
+    check("f'{await x}'")
+    check("f'{[x async for x in y]}'")
+
+
+@skip_before((3, 7))
+def test_too_many_args():
+    args = ", ".join("x{}".format(i) for i in range(300))
+    check("""
+def f({}):
+    pass
+
+f({})
+""".format(args, args))
+
+
+def test_finally_continue():
+    check("""
+def f():
+    for x in y:
+        try:
+            whatever
+        finally:
+            continue
+""")
+
+
+@skip_before((3, 4))
+def test_unpacking():
+    check("""
+def parse(family):
+    lastname, *members = family.split()
+    return (lastname.upper(), *members)
+""")
+
+
+@skip_before((3, 8))
+def test_unparenthesized_unpacking():
+    check("""
+def parse(family):
+    lastname, *members = family.split()
+    return lastname.upper(), *members
+""")
+
+
+@skip_before((3, 8))
+def test_assignment_expression():
+    check("""
+if (x := 3):
+    pass
+""")
+
+
+@skip_before((3, 8))
+def test_positional_only():
+    check("""
+def f(x, /):
+    pass
+""")
+
+
+@skip_before((3, 8))
+def test_fstring_debug_specifier():
+    check("f'{user=} {member_since=}'")
+    check("f'{user=!s}  {delta.days=:,d}'")
