@@ -1,5 +1,5 @@
 # coding: utf-8
-from .tests import check, skip_before
+from .tests import check, skip_before, skip_after
 
 
 @skip_before((3, 5))
@@ -202,4 +202,28 @@ class A:
     check("""
 def f():
     a: int
+""")
+
+
+@skip_before((3, 7))
+def test_future_annotations():
+    # This doesn't really affect ast_decompiler because the __future__
+    # import doesn't change the AST.
+    check("""
+from __future__ import annotations
+
+def f(x: int) -> str:
+    pass
+
+y: float
+""")
+
+
+@skip_after((3, 6))
+def test_async_varname():
+    check("import async")
+    check("await = 3")
+    check("""
+def async(async, await=3):
+    return async + await
 """)
