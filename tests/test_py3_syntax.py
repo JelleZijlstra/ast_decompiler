@@ -190,6 +190,17 @@ def test_kwonlyargs():
     check('def f(a, *args, b=3, **kwargs): pass')
 
 
+@skip_before((3, 8))
+def test_posonlyargs():
+    check('def f(a, /): pass')
+    check('def f(a, /, b): pass')
+    check('def f(a, /, b=3): pass')
+    check('def f(a, /, *, b=3): pass')
+    check('def f(a, /, *args): pass')
+    check('def f(a, /, *args, b=3): pass')
+    check('def f(a, /, *args, b=3, **kwargs): pass')
+
+
 @skip_before((3, 6))
 def test_annassign():
     check("a: int")

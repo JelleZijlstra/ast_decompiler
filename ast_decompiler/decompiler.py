@@ -763,6 +763,9 @@ class Decompiler(ast.NodeVisitor):
             self.write('=')
             self.visit(node.value)
 
+    def visit_Slash(self, node):
+        self.write('/')
+
     def visit_Repr(self, node):
         self.write('`')
         self.visit(node.value)
@@ -985,12 +988,16 @@ class Decompiler(ast.NodeVisitor):
         self.write_suite(node.body)
 
     def visit_arguments(self, node):
+        args = []
+        if getattr(node, 'posonlyargs', None):
+            args.extend(node.posonlyargs)
+            args.append(Slash())
         num_defaults = len(node.defaults)
         if num_defaults:
-            args = node.args[:-num_defaults]
+            args.extend(node.args[:-num_defaults])
             default_args = zip(node.args[-num_defaults:], node.defaults)
         else:
-            args = list(node.args)
+            args.extend(list(node.args))
             default_args = []
         for name, value in default_args:
             args.append(KeywordArg(name, value))
@@ -1079,3 +1086,7 @@ class KeywordArg(object):
     def __init__(self, arg, value):
         self.arg = arg
         self.value = value
+
+
+class Slash(object):
+    pass
