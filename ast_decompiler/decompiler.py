@@ -633,6 +633,14 @@ class Decompiler(ast.NodeVisitor):
             self.write(': ')
             self.visit(node.body)
 
+    def visit_NamedExpr(self, node):
+        self.write('(')
+        self.visit(node.target)
+        self.write(' := ')
+        # := has the lowest precedence, so we should never need to parenthesize this
+        self.visit(node.value)
+        self.write(')')
+
     def visit_IfExp(self, node):
         parent_node = self.get_parent_node()
         if isinstance(parent_node,
@@ -911,6 +919,14 @@ class Decompiler(ast.NodeVisitor):
             )
             if isinstance(parent_node, ast.comprehension) and node is parent_node.target:
                 should_parenthesize = False
+            # https://bugs.python.org/issue32117
+            if (
+                hasattr(ast, 'Starred')
+                and isinstance(parent_node, (ast.Return, ast.Yield))
+                and any(isinstance(elt, ast.Starred) for elt in node.elts)
+                and sys.version_info < (3, 8)
+            ):
+                should_parenthesize = True
             with self.parenthesize_if(should_parenthesize):
                 if len(node.elts) == 1:
                     self.visit(node.elts[0])
@@ -987,12 +1003,17 @@ class Decompiler(ast.NodeVisitor):
         self.write_suite(node.body)
 
     def visit_arguments(self, node):
+        args = []
+        if hasattr(node, "posonlyargs") and node.posonlyargs:
+            args += node.posonlyargs
+            args.append(ast.Name(id='/'))
+
         num_defaults = len(node.defaults)
         if num_defaults:
-            args = node.args[:-num_defaults]
+            args += node.args[:-num_defaults]
             default_args = zip(node.args[-num_defaults:], node.defaults)
         else:
-            args = list(node.args)
+            args += list(node.args)
             default_args = []
         for name, value in default_args:
             args.append(KeywordArg(name, value))

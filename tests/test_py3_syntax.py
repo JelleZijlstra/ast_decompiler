@@ -251,3 +251,53 @@ def f({}):
 
 f({})
 """.format(args, args))
+
+
+def test_finally_continue():
+    check("""
+def f():
+    for x in y:
+        try:
+            whatever
+        finally:
+            continue
+""")
+
+
+def test_unpacking():
+    check("""
+def parse(family):
+    lastname, *members = family.split()
+    return (lastname.upper(), *members)
+""")
+
+
+@skip_before((3, 8))
+def test_unparenthesized_unpacking():
+    check("""
+def parse(family):
+    lastname, *members = family.split()
+    return lastname.upper(), *members
+""")
+
+
+@skip_before((3, 8))
+def test_assignment_expression():
+    check("""
+if (x := 3):
+    pass
+""")
+
+
+@skip_before((3, 8))
+def test_positional_only():
+    check("""
+def f(x, /):
+    pass
+""")
+
+
+@skip_before((3, 8))
+def test_fstring_debug_specifier():
+    check("f'{user=} {member_since=}'")
+    check("f'{user=!s}  {delta.days=:,d}'")
