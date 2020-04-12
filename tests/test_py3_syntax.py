@@ -240,3 +240,14 @@ def async(async, await=3):
 def test_async_await_in_fstring():
     check("f'{await x}'")
     check("f'{[x async for x in y]}'")
+
+
+@skip_before((3, 7))
+def test_too_many_args():
+    args = ", ".join("x{}".format(i) for i in range(300))
+    check("""
+def f({}):
+    pass
+
+f({})
+""".format(args, args))
