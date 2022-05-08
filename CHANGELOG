@@ -1,5 +1,6 @@
 version 0.4.0 (May 7, 2020)
-- Support Python 3.7 and 3.8
+- Support Python 3.7 and 3.8 (thanks to Luke Plant)
+- Allow keyword-only arguments without default values (thanks to Shantanu Jain)
 
 version 0.3.2 (August 22, 2017)
 - More f-string fixes (thanks to Shantanu Jain)
