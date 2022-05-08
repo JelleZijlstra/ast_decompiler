@@ -19,7 +19,7 @@ def check(code):
     try:
         new_tree = ast.parse(new_code)
     except SyntaxError as e:
-        print('>>> syntax error:')
+        print(">>> syntax error:")
         lineno = e.lineno - 1
         min_lineno = max(0, lineno - 3)
         max_lineno = lineno + 3
@@ -35,7 +35,7 @@ def check(code):
         print(new_code)
         for line in difflib.unified_diff(dumped.split(), new_dumped.split()):
             print(line)
-        assert False, '%s != %s' % (dumped, new_dumped)
+        assert False, "%s != %s" % (dumped, new_dumped)
 
 
 def assert_decompiles(code, result, do_check=True, **kwargs):
@@ -44,44 +44,58 @@ def assert_decompiles(code, result, do_check=True, **kwargs):
     if do_check:
         check(decompile_result)
     if result != decompile_result:
-        print('>>> expected')
+        print(">>> expected")
         print(result)
-        print('>>> actual')
+        print(">>> actual")
         print(decompile_result)
-        print('>>> diff')
-        for line in difflib.unified_diff(result.splitlines(), decompile_result.splitlines()):
+        print(">>> diff")
+        for line in difflib.unified_diff(
+            result.splitlines(), decompile_result.splitlines()
+        ):
             print(line)
-        assert False, 'failed to decompile %s' % code
+        assert False, "failed to decompile %s" % code
 
 
 def only_on_version(py_version):
     """Decorator that runs a test only if the Python version matches."""
     if py_version != VERSION:
+
         def decorator(fn):
             return lambda *args: None
+
     else:
+
         def decorator(fn):
             return fn
+
     return decorator
 
 
 def skip_before(py_version):
     """Decorator that skips a test on Python versions before py_version."""
     if sys.version_info < py_version:
+
         def decorator(fn):
             return lambda *args: None
+
     else:
+
         def decorator(fn):
             return fn
+
     return decorator
 
 
 def skip_after(py_version):
     """Decorator that skips a test on Python versions after py_version."""
     if sys.version_info > py_version:
+
         def decorator(fn):
             return lambda *args: None
+
     else:
+
         def decorator(fn):
             return fn
+
     return decorator
