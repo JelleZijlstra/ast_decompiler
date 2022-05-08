@@ -2,24 +2,31 @@ from .tests import assert_decompiles, only_on_version
 
 
 def test_With():
-    assert_decompiles('with x as y, a as b: pass', '''with x as y, a as b:
+    assert_decompiles(
+        "with x as y, a as b: pass",
+        """with x as y, a as b:
     pass
-''')
+""",
+    )
 
 
 @only_on_version(2)
 def test_With_collapsed():
-    assert_decompiles('''
+    assert_decompiles(
+        """
 with x as y:
     with a as b:
         pass
-''', '''with x as y, a as b:
+""",
+        """with x as y, a as b:
     pass
-''')
+""",
+    )
 
 
 def test_TryFinally():
-    assert_decompiles('''
+    assert_decompiles(
+        """
 try:
     1 / 0
 except Exception as e:
@@ -28,7 +35,8 @@ else:
     z = 3
 finally:
     z = 4
-''', '''try:
+""",
+        """try:
     1 / 0
 except Exception as e:
     pass
@@ -36,12 +44,14 @@ else:
     z = 3
 finally:
     z = 4
-''')
+""",
+    )
 
 
 @only_on_version(2)
 def test_TryFinally_collapsed():
-    assert_decompiles('''
+    assert_decompiles(
+        """
 try:
     try:
         1 / 0
@@ -49,29 +59,35 @@ try:
         pass
 finally:
     z = 4
-''', '''try:
+""",
+        """try:
     1 / 0
 except Exception as e:
     pass
 finally:
     z = 4
-''')
+""",
+    )
 
 
 def test_If():
-    assert_decompiles('''
+    assert_decompiles(
+        """
 if x: pass
 else:
     if y: pass
     else: pass
-''', '''if x:
+""",
+        """if x:
     pass
 elif y:
     pass
 else:
     pass
-''')
-    assert_decompiles('''
+""",
+    )
+    assert_decompiles(
+        """
 if x: pass
 elif a:
     if y: pass
@@ -80,7 +96,8 @@ elif a:
         else: pass
 else:
     pass
-''', '''if x:
+""",
+        """if x:
     pass
 elif a:
     if y:
@@ -91,11 +108,15 @@ elif a:
         pass
 else:
     pass
-''')
+""",
+    )
 
 
 def test_BinOp():
-    assert_decompiles('''
+    assert_decompiles(
+        """
 f(a * b)
-''', '''f(a * b)
-''')
+""",
+        """f(a * b)
+""",
+    )

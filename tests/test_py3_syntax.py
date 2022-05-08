@@ -4,149 +4,189 @@ from .tests import check, skip_before, skip_after
 
 @skip_before((3, 5))
 def test_MatMult():
-    check('a @ b')
-    check('(a * b) @ c')
-    check('a * (b @ c)')
-    check('a + (b @ c)')
+    check("a @ b")
+    check("(a * b) @ c")
+    check("a * (b @ c)")
+    check("a + (b @ c)")
 
 
 @skip_before((3, 5))
 def test_AsyncFunctionDef():
-    check('''
+    check(
+        """
 async def f(a, b):
     pass
-''')
+"""
+    )
 
 
 @skip_before((3, 6))
 def test_async_gen():
-    check('''
+    check(
+        """
 async def f():
     yield
-''')
+"""
+    )
 
 
 @skip_before((3, 6))
 def test_async_comprehensions():
-    check('''
+    check(
+        """
 async def f(lst):
     return [await x for x in lst]
-''')
-    check('''
+"""
+    )
+    check(
+        """
 async def f(lst):
     a = [x async for x in lst]
     b = {x async for x in lst}
     c = {x: x async for x in lst}
     d = (x async for x in lst)
-''')
+"""
+    )
 
 
 @skip_before((3, 0))
 def test_annotations():
     # TODO test precedence
-    check('''
+    check(
+        """
 def f(a: int, b: str) -> float:
     pass
-''')
+"""
+    )
 
 
 @skip_before((3, 0))
 def test_class_keywords():
-    check('''
+    check(
+        """
 class Foo(a=3):
     pass
-''')
-    check('''
+"""
+    )
+    check(
+        """
 class WithMeta(metaclass=type):
     pass
-''')
+"""
+    )
 
 
 @skip_before((3, 5))
 def test_AsyncFor():
-    check('''
+    check(
+        """
 async def f(y):
     async for x in y:
         pass
-''')
+"""
+    )
 
 
 @skip_before((3, 0))
 def test_py3_with():
-    check('''
+    check(
+        """
 with a as b:
     pass
-''')
-    check('''
+"""
+    )
+    check(
+        """
 with a as b, c as d:
     pass
-''')
-    check('''
+"""
+    )
+    check(
+        """
 with a as b:
     with c as d:
         pass
-''')
+"""
+    )
 
 
 @skip_before((3, 5))
 def test_async_with():
-    check('''
+    check(
+        """
 async def f(a):
     async with a as b:
         pass
-''')
+"""
+    )
 
 
 @skip_before((3, 0))
 def test_raise_with_cause():
-    check('''
+    check(
+        """
 raise e from ee
-''')
+"""
+    )
 
 
 @skip_before((3, 0))
 def test_Nonlocal():
-    check('''
+    check(
+        """
 def f(x):
     nonlocal y
-''')
-    check('''
+"""
+    )
+    check(
+        """
 def f(x):
     nonlocal y, z
-''')
+"""
+    )
 
 
 @skip_before((3, 5))
 def test_Await():
-    check('''
+    check(
+        """
 async def f(x):
     await x
-''')
-    check('''
+"""
+    )
+    check(
+        """
 async def f(x):
     1 + await x
-''')
-    check('''
+"""
+    )
+    check(
+        """
 async def f(x):
     x = await x
-''')
-    check('''
+"""
+    )
+    check(
+        """
 async def f(x):
     x += await x
-''')
-    check('''
+"""
+    )
+    check(
+        """
 async def f(x):
     return 3, (await x)
-''')
+"""
+    )
 
 
 @skip_before((3, 0))
 def test_YieldFrom():
-    check('yield from x')
-    check('1 + (yield from x)')
-    check('x = yield from x')
-    check('x += yield from x')
-    check('return 3, (yield from x)')
+    check("yield from x")
+    check("1 + (yield from x)")
+    check("x = yield from x")
+    check("x += yield from x")
+    check("return 3, (yield from x)")
 
 
 @skip_before((3, 6))
@@ -157,7 +197,7 @@ def test_FormattedValue():
     check('f"{b!r}"')
     check('f"{b:a}"')
     check('f"{b!r:a}"')
-    check('f"{\'b\'!r:\'a\'}"')
+    check("f\"{'b'!r:'a'}\"")
     check('f"{a}b{c!a}s"')
     check('f"{a.b}c{d()}"')
     check("f'{1/3:.1f}'")
@@ -179,22 +219,22 @@ def test_Bytes():
 
 @skip_before((3, 0))
 def test_NameConstant():
-    check('True')
+    check("True")
 
 
 @skip_before((3, 0))
 def test_Starred():
-    check('a, *b = 3')
-    check('[a, *b]')
+    check("a, *b = 3")
+    check("[a, *b]")
 
 
 @skip_before((3, 0))
 def test_kwonlyargs():
-    check('def f(a, *, b): pass')
-    check('def f(a, *args, b): pass')
-    check('def f(a, *, b=3): pass')
-    check('def f(a, *args, b=3): pass')
-    check('def f(a, *args, b=3, **kwargs): pass')
+    check("def f(a, *, b): pass")
+    check("def f(a, *args, b): pass")
+    check("def f(a, *, b=3): pass")
+    check("def f(a, *args, b=3): pass")
+    check("def f(a, *args, b=3, **kwargs): pass")
 
 
 @skip_before((3, 6))
@@ -202,38 +242,46 @@ def test_annassign():
     check("a: int")
     check("a: int = 3")
     check("(a): int")
-    check("""
+    check(
+        """
 class A:
     b: int
-""")
-    check("""
+"""
+    )
+    check(
+        """
 def f():
     a: int
-""")
+"""
+    )
 
 
 @skip_before((3, 7))
 def test_future_annotations():
     # This doesn't really affect ast_decompiler because the __future__
     # import doesn't change the AST.
-    check("""
+    check(
+        """
 from __future__ import annotations
 
 def f(x: int) -> str:
     pass
 
 y: float
-""")
+"""
+    )
 
 
 @skip_after((3, 6))
 def test_async_varname():
     check("import async")
     check("await = 3")
-    check("""
+    check(
+        """
 def async(async, await=3):
     return async + await
-""")
+"""
+    )
 
 
 @skip_before((3, 7))
@@ -245,57 +293,71 @@ def test_async_await_in_fstring():
 @skip_before((3, 7))
 def test_too_many_args():
     args = ", ".join("x{}".format(i) for i in range(300))
-    check("""
+    check(
+        """
 def f({}):
     pass
 
 f({})
-""".format(args, args))
+""".format(
+            args, args
+        )
+    )
 
 
 def test_finally_continue():
-    check("""
+    check(
+        """
 def f():
     for x in y:
         try:
             whatever
         finally:
             continue
-""")
+"""
+    )
 
 
 @skip_before((3, 4))
 def test_unpacking():
-    check("""
+    check(
+        """
 def parse(family):
     lastname, *members = family.split()
     return (lastname.upper(), *members)
-""")
+"""
+    )
 
 
 @skip_before((3, 8))
 def test_unparenthesized_unpacking():
-    check("""
+    check(
+        """
 def parse(family):
     lastname, *members = family.split()
     return lastname.upper(), *members
-""")
+"""
+    )
 
 
 @skip_before((3, 8))
 def test_assignment_expression():
-    check("""
+    check(
+        """
 if (x := 3):
     pass
-""")
+"""
+    )
 
 
 @skip_before((3, 8))
 def test_positional_only():
-    check("""
+    check(
+        """
 def f(x, /):
     pass
-""")
+"""
+    )
 
 
 @skip_before((3, 8))
