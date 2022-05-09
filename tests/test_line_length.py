@@ -57,7 +57,7 @@ def test_boolop() -> None:
 def test_display() -> None:
     delimiters = [("{", "}"), ("[", "]"), ("\n\nclass Foo(", "):\n    pass")]
     for start, end in delimiters:
-        original = "%sa, b, c%s\n" % (start, end)
+        original = f"{start}a, b, c{end}\n"
         assert_decompiles(original, original, line_length=len(original))
 
         assert_decompiles(

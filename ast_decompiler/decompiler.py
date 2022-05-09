@@ -862,7 +862,7 @@ class Decompiler(ast.NodeVisitor):
                     self.write(node.format_spec.s)
                 else:
                     raise TypeError(
-                        "format spec must be a string, not {}".format(node.format_spec)
+                        f"format spec must be a string, not {node.format_spec}"
                     )
             if add_space:
                 self.write(" ")
@@ -991,7 +991,7 @@ class Decompiler(ast.NodeVisitor):
 
     # operators
     for op, string in _OP_TO_STR.items():
-        exec("def visit_%s(self, node): self.write(%r)" % (op.__name__, string))
+        exec(f"def visit_{op.__name__}(self, node): self.write({string!r})")
 
     # Other types
 
