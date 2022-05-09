@@ -1016,7 +1016,7 @@ class Decompiler(ast.NodeVisitor):
 
     def visit_arguments(self, node: ast.arguments) -> None:
         args = []
-        if node.posonlyargs:
+        if sys.version_info >= (3, 8) and node.posonlyargs:
             args += node.posonlyargs
             args.append(ast.Name(id="/"))
 
