@@ -284,6 +284,7 @@ def test_Dict() -> None:
     check("{}")
     check("{1: 2}")
     check("{1: 2, 3: 4}")
+    check("{**x, **y, 1: 2}")
 
 
 def test_Set() -> None:

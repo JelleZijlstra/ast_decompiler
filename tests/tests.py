@@ -43,9 +43,21 @@ def check(code: str) -> None:
         assert False, "%s != %s" % (dumped, new_dumped)
 
 
-def assert_decompiles(code: str, result: str, do_check: bool = True, **kwargs) -> None:
+def assert_decompiles(
+    code: str,
+    result: str,
+    do_check: bool = True,
+    indentation: int = 4,
+    line_length: int = 100,
+    starting_indentation: int = 0,
+) -> None:
     """Asserts that code, when parsed, decompiles into result."""
-    decompile_result = decompile(ast.parse(code), **kwargs)
+    decompile_result = decompile(
+        ast.parse(code),
+        indentation=indentation,
+        line_length=line_length,
+        starting_indentation=starting_indentation,
+    )
     if do_check:
         check(decompile_result)
     if result != decompile_result:

@@ -48,7 +48,7 @@ class _CallArgs(ast.AST):
 
     """
 
-    def __init__(self, args) -> None:
+    def __init__(self, args: Sequence[ast.AST]) -> None:
         self.args = args
 
 
@@ -104,15 +104,55 @@ def decompile(
     return decompiler.run(ast)
 
 
+# helper ast nodes to make decompilation easier
+class KeyValuePair(ast.AST):
+    """A key-value pair as used in a dictionary display."""
+
+    _fields = ("key", "value")
+
+    def __init__(self, key: Optional[ast.AST], value: ast.AST) -> None:
+        self.key = key
+        self.value = value
+
+
+class StarArg(ast.AST):
+    """A * argument."""
+
+    _fields = ("arg",)
+
+    def __init__(self, arg: ast.Name) -> None:
+        self.arg = arg
+
+
+class DoubleStarArg(ast.AST):
+    """A ** argument."""
+
+    _fields = ("arg",)
+
+    def __init__(self, arg: ast.Name) -> None:
+        self.arg = arg
+
+
+class KeywordArg(ast.AST):
+    """A x=3 keyword argument in a function definition."""
+
+    _fields = ("arg", "value")
+
+    def __init__(self, arg: ast.arg, value: Optional[ast.AST]) -> None:
+        self.arg = arg
+        self.value = value
+
+
 class Decompiler(ast.NodeVisitor):
-    def __init__(self, indentation, line_length, starting_indentation) -> None:
+    def __init__(
+        self, indentation: int, line_length: int, starting_indentation: int
+    ) -> None:
         self.lines = []
         self.current_line = []
         self.current_indentation = starting_indentation
         self.node_stack = []
         self.indentation = indentation
         self.max_line_length = line_length
-        self.has_unicode_literals = False
 
     def run(self, ast: ast.AST) -> str:
         self.visit(ast)
@@ -162,7 +202,7 @@ class Decompiler(ast.NodeVisitor):
 
     def write_expression_list(
         self,
-        nodes,
+        nodes: Sequence[ast.AST],
         *,
         separator: str = ", ",
         allow_newlines: bool = True,
@@ -378,13 +418,13 @@ class Decompiler(ast.NodeVisitor):
         self.write_newline()
         self.write_suite(node.body)
 
-    def visit_withitem(self, node) -> None:
+    def visit_withitem(self, node: ast.withitem) -> None:
         self.visit(node.context_expr)
         if node.optional_vars:
             self.write(" as ")
             self.visit(node.optional_vars)
 
-    def visit_Try(self, node) -> None:
+    def visit_Try(self, node: ast.Try) -> None:
         self.write_indentation()
         self.write("try:")
         self.write_newline()
@@ -395,7 +435,7 @@ class Decompiler(ast.NodeVisitor):
         if node.finalbody:
             self.write_finalbody(node.finalbody)
 
-    def write_finalbody(self, body) -> None:
+    def write_finalbody(self, body: Sequence[ast.AST]) -> None:
         self.write_indentation()
         self.write("finally:")
         self.write_newline()
@@ -403,7 +443,7 @@ class Decompiler(ast.NodeVisitor):
 
     # One-line statements
 
-    def visit_Return(self, node) -> None:
+    def visit_Return(self, node: ast.Return) -> None:
         self.write_indentation()
         self.write("return")
         if node.value:
@@ -411,20 +451,20 @@ class Decompiler(ast.NodeVisitor):
             self.visit(node.value)
         self.write_newline()
 
-    def visit_Delete(self, node) -> None:
+    def visit_Delete(self, node: ast.Delete) -> None:
         self.write_indentation()
         self.write("del ")
         self.write_expression_list(node.targets, allow_newlines=False)
         self.write_newline()
 
-    def visit_Assign(self, node) -> None:
+    def visit_Assign(self, node: ast.Assign) -> None:
         self.write_indentation()
         self.write_expression_list(node.targets, separator=" = ", allow_newlines=False)
         self.write(" = ")
         self.visit(node.value)
         self.write_newline()
 
-    def visit_AugAssign(self, node) -> None:
+    def visit_AugAssign(self, node: ast.AugAssign) -> None:
         self.write_indentation()
         self.visit(node.target)
         self.write(" ")
@@ -433,7 +473,7 @@ class Decompiler(ast.NodeVisitor):
         self.visit(node.value)
         self.write_newline()
 
-    def visit_AnnAssign(self, node) -> None:
+    def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
         self.write_indentation()
         if not node.simple:
             self.write("(")
@@ -447,22 +487,7 @@ class Decompiler(ast.NodeVisitor):
             self.visit(node.value)
         self.write_newline()
 
-    def visit_Print(self, node) -> None:
-        self.write_indentation()
-        self.write("print")
-        if node.dest:
-            self.write(" >>")
-            self.visit(node.dest)
-            if node.values:
-                self.write(",")
-        if node.values:
-            self.write(" ")
-        self.write_expression_list(node.values, allow_newlines=False)
-        if not node.nl:
-            self.write(",")
-        self.write_newline()
-
-    def visit_Raise(self, node) -> None:
+    def visit_Raise(self, node: ast.Raise) -> None:
         self.write_indentation()
         self.write("raise")
         if node.exc is not None:
@@ -473,7 +498,7 @@ class Decompiler(ast.NodeVisitor):
                 self.visit(node.cause)
         self.write_newline()
 
-    def visit_Assert(self, node) -> None:
+    def visit_Assert(self, node: ast.Assert) -> None:
         self.write_indentation()
         self.write("assert ")
         self.visit(node.test)
@@ -482,18 +507,13 @@ class Decompiler(ast.NodeVisitor):
             self.visit(node.msg)
         self.write_newline()
 
-    def visit_Import(self, node) -> None:
+    def visit_Import(self, node: ast.Import) -> None:
         self.write_indentation()
         self.write("import ")
         self.write_expression_list(node.names, allow_newlines=False)
         self.write_newline()
 
-    def visit_ImportFrom(self, node) -> None:
-        if node.module == "__future__" and any(
-            alias.name == "unicode_literals" for alias in node.names
-        ):
-            self.has_unicode_literals = True
-
+    def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
         self.write_indentation()
         self.write("from %s" % ("." * (node.level or 0)))
         if node.module:
@@ -502,51 +522,39 @@ class Decompiler(ast.NodeVisitor):
         self.write_expression_list(node.names)
         self.write_newline()
 
-    def visit_Exec(self, node) -> None:
-        self.write_indentation()
-        self.write("exec ")
-        self.visit(node.body)
-        if node.globals:
-            self.write(" in ")
-            self.visit(node.globals)
-        if node.locals:
-            self.write(", ")
-            self.visit(node.locals)
-        self.write_newline()
-
-    def visit_Global(self, node) -> None:
+    def visit_Global(self, node: ast.Global) -> None:
         self.write_indentation()
         self.write("global %s" % ", ".join(node.names))
         self.write_newline()
 
-    def visit_Nonlocal(self, node) -> None:
+    def visit_Nonlocal(self, node: ast.Nonlocal) -> None:
         self.write_indentation()
         self.write("nonlocal %s" % ", ".join(node.names))
         self.write_newline()
 
-    def visit_Expr(self, node) -> None:
+    def visit_Expr(self, node: ast.Expr) -> None:
         self.write_indentation()
         self.visit(node.value)
         self.write_newline()
 
-    def visit_Pass(self, node) -> None:
+    def visit_Pass(self, node: ast.Pass) -> None:
         self.write_indentation()
         self.write("pass")
         self.write_newline()
 
-    def visit_Break(self, node) -> None:
+    def visit_Break(self, node: ast.Break) -> None:
         self.write_indentation()
         self.write("break")
         self.write_newline()
 
-    def visit_Continue(self, node) -> None:
+    def visit_Continue(self, node: ast.Continue) -> None:
         self.write_indentation()
         self.write("continue")
         self.write_newline()
 
     # Expressions
 
-    def visit_BoolOp(self, node) -> None:
+    def visit_BoolOp(self, node: ast.BoolOp) -> None:
         my_prec = self.precedence_of_node(node)
         parent_prec = self.precedence_of_node(self.get_parent_node())
         with self.parenthesize_if(my_prec <= parent_prec):
@@ -557,7 +565,7 @@ class Decompiler(ast.NodeVisitor):
                 final_separator_if_multiline=False,
             )
 
-    def visit_BinOp(self, node) -> None:
+    def visit_BinOp(self, node: ast.BinOp) -> None:
         parent_node = self.get_parent_node()
         my_prec = self.precedence_of_node(node)
         parent_prec = self.precedence_of_node(parent_node)
@@ -578,14 +586,14 @@ class Decompiler(ast.NodeVisitor):
             self.write(" ")
             self.visit(node.right)
 
-    def visit_UnaryOp(self, node) -> None:
+    def visit_UnaryOp(self, node: ast.UnaryOp) -> None:
         my_prec = self.precedence_of_node(node)
         parent_prec = self.precedence_of_node(self.get_parent_node())
         with self.parenthesize_if(my_prec < parent_prec):
             self.visit(node.op)
             self.visit(node.operand)
 
-    def visit_Lambda(self, node) -> None:
+    def visit_Lambda(self, node: ast.Lambda) -> None:
         should_parenthesize = isinstance(
             self.get_parent_node(),
             (
@@ -607,7 +615,7 @@ class Decompiler(ast.NodeVisitor):
             self.write(": ")
             self.visit(node.body)
 
-    def visit_NamedExpr(self, node) -> None:
+    def visit_NamedExpr(self, node: ast.NamedExpr) -> None:
         self.write("(")
         self.visit(node.target)
         self.write(" := ")
@@ -615,7 +623,7 @@ class Decompiler(ast.NodeVisitor):
         self.visit(node.value)
         self.write(")")
 
-    def visit_IfExp(self, node) -> None:
+    def visit_IfExp(self, node: ast.IfExp) -> None:
         parent_node = self.get_parent_node()
         if isinstance(
             parent_node,
@@ -645,35 +653,38 @@ class Decompiler(ast.NodeVisitor):
             self.write(" else ")
             self.visit(node.orelse)
 
-    def visit_Dict(self, node) -> None:
+    def visit_Dict(self, node: ast.Dict) -> None:
         self.write("{")
         items = [KeyValuePair(key, value) for key, value in zip(node.keys, node.values)]
         self.write_expression_list(items, need_parens=False)
         self.write("}")
 
-    def visit_KeyValuePair(self, node) -> None:
-        self.visit(node.key)
-        self.write(": ")
+    def visit_KeyValuePair(self, node: KeyValuePair) -> None:
+        if node.key is None:
+            self.write("**")
+        else:
+            self.visit(node.key)
+            self.write(": ")
         self.visit(node.value)
 
-    def visit_Set(self, node) -> None:
+    def visit_Set(self, node: ast.Set) -> None:
         self.write("{")
         self.write_expression_list(node.elts, need_parens=False)
         self.write("}")
 
-    def visit_ListComp(self, node) -> None:
+    def visit_ListComp(self, node: ast.ListComp) -> None:
         self.visit_comp(node, "[", "]")
 
-    def visit_SetComp(self, node) -> None:
+    def visit_SetComp(self, node: ast.SetComp) -> None:
         self.visit_comp(node, "{", "}")
 
-    def visit_DictComp(self, node) -> None:
+    def visit_DictComp(self, node: ast.DictComp) -> None:
         self.write("{")
         elts = [KeyValuePair(node.key, node.value)] + node.generators
         self.write_expression_list(elts, separator=" ", need_parens=False)
         self.write("}")
 
-    def visit_GeneratorExp(self, node) -> None:
+    def visit_GeneratorExp(self, node: ast.GeneratorExp) -> None:
         parent_node = self.get_parent_node()
         # if this is the only argument to a function, omit the extra parentheses
         if (
@@ -687,14 +698,19 @@ class Decompiler(ast.NodeVisitor):
             end = ")"
         self.visit_comp(node, start, end)
 
-    def visit_comp(self, node, start: str, end: str) -> None:
+    def visit_comp(
+        self,
+        node: Union[ast.GeneratorExp, ast.ListComp, ast.SetComp],
+        start: str,
+        end: str,
+    ) -> None:
         self.write(start)
         self.write_expression_list(
             [node.elt] + node.generators, separator=" ", need_parens=False
         )
         self.write(end)
 
-    def visit_Await(self, node) -> None:
+    def visit_Await(self, node: ast.Await) -> None:
         with self.parenthesize_if(
             not isinstance(
                 self.get_parent_node(), (ast.Expr, ast.Assign, ast.AugAssign)
@@ -703,7 +719,7 @@ class Decompiler(ast.NodeVisitor):
             self.write("await ")
             self.visit(node.value)
 
-    def visit_Yield(self, node) -> None:
+    def visit_Yield(self, node: ast.Yield) -> None:
         with self.parenthesize_if(
             not isinstance(
                 self.get_parent_node(), (ast.Expr, ast.Assign, ast.AugAssign)
@@ -714,7 +730,7 @@ class Decompiler(ast.NodeVisitor):
                 self.write(" ")
                 self.visit(node.value)
 
-    def visit_YieldFrom(self, node) -> None:
+    def visit_YieldFrom(self, node: ast.YieldFrom) -> None:
         with self.parenthesize_if(
             not isinstance(
                 self.get_parent_node(), (ast.Expr, ast.Assign, ast.AugAssign)
@@ -723,7 +739,7 @@ class Decompiler(ast.NodeVisitor):
             self.write("yield from ")
             self.visit(node.value)
 
-    def visit_Compare(self, node) -> None:
+    def visit_Compare(self, node: ast.Compare) -> None:
         my_prec = self.precedence_of_node(node)
         parent_prec = self.precedence_of_node(self.get_parent_node())
         with self.parenthesize_if(my_prec <= parent_prec):
@@ -752,24 +768,19 @@ class Decompiler(ast.NodeVisitor):
         finally:
             self.node_stack.pop()
 
-    def visit_StarArg(self, node) -> None:
+    def visit_StarArg(self, node: StarArg) -> None:
         self.write("*")
         self.visit(node.arg)
 
-    def visit_DoubleStarArg(self, node) -> None:
+    def visit_DoubleStarArg(self, node: DoubleStarArg) -> None:
         self.write("**")
         self.visit(node.arg)
 
-    def visit_KeywordArg(self, node) -> None:
+    def visit_KeywordArg(self, node: KeywordArg) -> None:
         self.visit(node.arg)
         if node.value is not None:
             self.write("=")
             self.visit(node.value)
-
-    def visit_Repr(self, node) -> None:
-        self.write("`")
-        self.visit(node.value)
-        self.write("`")
 
     def visit_Num(self, node: ast.Num) -> None:
         self.write_number(node.n)
@@ -857,7 +868,7 @@ class Decompiler(ast.NodeVisitor):
                 self.write(" ")
             self.write("}")
 
-    def visit_JoinedStr(self, node) -> None:
+    def visit_JoinedStr(self, node: ast.JoinedStr) -> None:
         has_parent = isinstance(self.get_parent_node(), ast.FormattedValue)
         with self.f_literalise_if(not has_parent):
             for value in node.values:
@@ -871,10 +882,10 @@ class Decompiler(ast.NodeVisitor):
                 else:
                     self.visit(value)
 
-    def visit_Bytes(self, node) -> None:
+    def visit_Bytes(self, node: ast.Bytes) -> None:
         self.write(repr(node.s))
 
-    def visit_NameConstant(self, node) -> None:
+    def visit_NameConstant(self, node: ast.NameConstant) -> None:
         self.write(repr(node.value))
 
     def visit_Constant(self, node: ast.Constant) -> None:
@@ -1062,7 +1073,7 @@ class Decompiler(ast.NodeVisitor):
                 final_separator_if_multiline=False,  # illegal after **kwargs
             )
 
-    def visit_arg(self, node) -> None:
+    def visit_arg(self, node: ast.arg) -> None:
         self.write(node.arg)
         if node.annotation:
             self.write(": ")
@@ -1081,42 +1092,3 @@ class Decompiler(ast.NodeVisitor):
         self.write(node.name)
         if node.asname is not None:
             self.write(" as %s" % node.asname)
-
-
-# helper ast nodes to make decompilation easier
-class KeyValuePair(object):
-    """A key-value pair as used in a dictionary display."""
-
-    _fields = ["key", "value"]
-
-    def __init__(self, key, value) -> None:
-        self.key = key
-        self.value = value
-
-
-class StarArg(object):
-    """A * argument."""
-
-    _fields = ["arg"]
-
-    def __init__(self, arg) -> None:
-        self.arg = arg
-
-
-class DoubleStarArg(object):
-    """A ** argument."""
-
-    _fields = ["arg"]
-
-    def __init__(self, arg) -> None:
-        self.arg = arg
-
-
-class KeywordArg(object):
-    """A x=3 keyword argument in a function definition."""
-
-    _fields = ["arg", "value"]
-
-    def __init__(self, arg, value) -> None:
-        self.arg = arg
-        self.value = value
