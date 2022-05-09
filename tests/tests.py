@@ -40,7 +40,7 @@ def check(code):
         assert False, "%s != %s" % (dumped, new_dumped)
 
 
-def assert_decompiles(code, result, do_check=True, **kwargs):
+def assert_decompiles(code, result, do_check=True, **kwargs) -> None:
     """Asserts that code, when parsed, decompiles into result."""
     decompile_result = decompile(ast.parse(code), **kwargs)
     if do_check:

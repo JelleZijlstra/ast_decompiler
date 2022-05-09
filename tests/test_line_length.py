@@ -1,14 +1,14 @@
 from .tests import assert_decompiles
 
 
-def check_split(original, multiline, length_reduction=2):
+def check_split(original, multiline, length_reduction=2) -> None:
     assert_decompiles(original, original, line_length=len(original))
     assert_decompiles(
         original, multiline, line_length=len(original.strip()) - length_reduction
     )
 
 
-def test_with_prefix():
+def test_with_prefix() -> None:
     prefixes = [
         "from x import",
     ]
@@ -25,22 +25,22 @@ def test_with_prefix():
         )
 
 
-def test_del():
+def test_del() -> None:
     original = "del a, b, c\n"
     check_split(original, original, length_reduction=10)
 
 
-def test_import():
+def test_import() -> None:
     original = "import a, b, c, d\n"
     check_split(original, original, length_reduction=10)
 
 
-def test_global():
+def test_global() -> None:
     original = "global a, b, c, d\n"
     check_split(original, original, length_reduction=10)
 
 
-def test_boolop():
+def test_boolop() -> None:
     check_split(
         "if a and b and c:\n    pass\n",
         """if (
@@ -54,7 +54,7 @@ def test_boolop():
     )
 
 
-def test_display():
+def test_display() -> None:
     delimiters = [("{", "}"), ("[", "]"), ("\n\nclass Foo(", "):\n    pass")]
     for start, end in delimiters:
         original = "%sa, b, c%s\n" % (start, end)
@@ -73,7 +73,7 @@ def test_display():
         )
 
 
-def test_assign():
+def test_assign() -> None:
     check_split(
         "a, b, c = lst\n",
         """(
@@ -89,7 +89,7 @@ def test_assign():
     check_split(original, original, length_reduction=3)
 
 
-def test_tuple():
+def test_tuple() -> None:
     check_split(
         "a, b, c\n",
         """(
@@ -101,7 +101,7 @@ def test_tuple():
     )
 
 
-def test_extslice():
+def test_extslice() -> None:
     check_split(
         "d[a:, b, c]\n",
         """d[
@@ -113,7 +113,7 @@ def test_extslice():
     )
 
 
-def test_comprehension():
+def test_comprehension() -> None:
     check_split(
         "[x for y in lst for x in y]\n",
         """[
@@ -125,7 +125,7 @@ def test_comprehension():
     )
 
 
-def test_dict():
+def test_dict() -> None:
     check_split(
         "{a: b, c: d}\n",
         """{
@@ -136,7 +136,7 @@ def test_dict():
     )
 
 
-def test_dictcomp():
+def test_dictcomp() -> None:
     check_split(
         "{a: b for a, b in c}\n",
         """{
@@ -147,7 +147,7 @@ def test_dictcomp():
     )
 
 
-def test_function_def():
+def test_function_def() -> None:
     check_split(
         "\ndef f(a, b, *args, **kwargs):\n    pass\n",
         """
@@ -163,7 +163,7 @@ def f(
     )
 
 
-def test_call():
+def test_call() -> None:
     check_split(
         "f(a, b, **c)\n",
         """f(
@@ -175,7 +175,7 @@ def test_call():
     )
 
 
-def test_nesting():
+def test_nesting() -> None:
     check_split(
         "f(f(a, b, c), g(d, e, f))\n",
         """f(
