@@ -615,7 +615,7 @@ class Decompiler(ast.NodeVisitor):
             self.write(": ")
             self.visit(node.body)
 
-    def visit_NamedExpr(self, node: ast.NamedExpr) -> None:
+    def visit_NamedExpr(self, node: "ast.NamedExpr") -> None:
         self.write("(")
         self.visit(node.target)
         self.write(" := ")
