@@ -14,14 +14,13 @@ def test_with_prefix() -> None:
     ]
     for prefix in prefixes:
         check_split(
-            "%s a, b, c\n" % prefix,
-            """%s (
+            f"{prefix} a, b, c\n",
+            f"""{prefix} (
     a,
     b,
     c,
 )
-"""
-            % prefix,
+""",
         )
 
 
@@ -62,13 +61,12 @@ def test_display() -> None:
 
         assert_decompiles(
             original,
-            """%s
+            f"""{start}
     a,
     b,
     c,
-%s
-"""
-            % (start, end),
+{end}
+""",
             line_length=len(start.lstrip()) + 5,
         )
 

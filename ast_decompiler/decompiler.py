@@ -166,8 +166,7 @@ class Decompiler(ast.NodeVisitor):
         try:
             super().visit(node)
         finally:
-            if self.node_stack:
-                self.node_stack.pop()
+            self.node_stack.pop()
 
     def precedence_of_node(self, node: Optional[ast.AST]) -> int:
         if node is None:
@@ -287,7 +286,7 @@ class Decompiler(ast.NodeVisitor):
             yield
 
     def generic_visit(self, node: ast.AST) -> None:
-        raise NotImplementedError("missing visit method for %r" % node)
+        raise NotImplementedError(f"missing visit method for {node!r}")
 
     def visit_Module(self, node: Union[ast.Module, ast.Interactive]) -> None:
         for line in node.body:
@@ -319,7 +318,7 @@ class Decompiler(ast.NodeVisitor):
         self.write_indentation()
         if is_async:
             self.write("async ")
-        self.write("def %s(" % node.name)
+        self.write(f"def {node.name}(")
         self.visit(node.args)
         self.write(")")
         if node.returns is not None:
@@ -340,7 +339,7 @@ class Decompiler(ast.NodeVisitor):
             self.write_newline()
 
         self.write_indentation()
-        self.write("class %s(" % node.name)
+        self.write(f"class {node.name}(")
         exprs = node.bases + getattr(node, "keywords", [])
         self.write_expression_list(exprs, need_parens=False)
         self.write("):")
@@ -515,7 +514,8 @@ class Decompiler(ast.NodeVisitor):
 
     def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
         self.write_indentation()
-        self.write("from %s" % ("." * (node.level or 0)))
+        dots = "." * (node.level or 0)
+        self.write(f"from {dots}")
         if node.module:
             self.write(node.module)
         self.write(" import ")
@@ -524,12 +524,12 @@ class Decompiler(ast.NodeVisitor):
 
     def visit_Global(self, node: ast.Global) -> None:
         self.write_indentation()
-        self.write("global %s" % ", ".join(node.names))
+        self.write(f"global {', '.join(node.names)}")
         self.write_newline()
 
     def visit_Nonlocal(self, node: ast.Nonlocal) -> None:
         self.write_indentation()
-        self.write("nonlocal %s" % ", ".join(node.names))
+        self.write(f"nonlocal {', '.join(node.names)}")
         self.write_newline()
 
     def visit_Expr(self, node: ast.Expr) -> None:
@@ -561,7 +561,7 @@ class Decompiler(ast.NodeVisitor):
             op = "and" if isinstance(node.op, ast.And) else "or"
             self.write_expression_list(
                 node.values,
-                separator=" %s " % op,
+                separator=f" {op} ",
                 final_separator_if_multiline=False,
             )
 
@@ -853,7 +853,7 @@ class Decompiler(ast.NodeVisitor):
             if node.conversion != -1:
                 # https://github.com/python/typeshed/pull/7810
                 # static analysis: ignore[incompatible_argument]
-                self.write("!%s" % chr(node.conversion))
+                self.write(f"!{chr(node.conversion)}")
             if node.format_spec is not None:
                 self.write(":")
                 if isinstance(node.format_spec, ast.JoinedStr):
@@ -904,7 +904,7 @@ class Decompiler(ast.NodeVisitor):
 
     def visit_Attribute(self, node: ast.Attribute) -> None:
         self.visit(node.value)
-        self.write(".%s" % node.attr)
+        self.write(f".{node.attr}")
 
     def visit_Subscript(self, node: ast.Subscript) -> None:
         self.visit(node.value)
@@ -946,8 +946,7 @@ class Decompiler(ast.NodeVisitor):
                 allow_parens = False
             # https://bugs.python.org/issue32117
             if (
-                hasattr(ast, "Starred")
-                and isinstance(parent_node, (ast.Return, ast.Yield))
+                isinstance(parent_node, (ast.Return, ast.Yield))
                 and any(isinstance(elt, ast.Starred) for elt in node.elts)
                 and sys.version_info < (3, 8)
             ):
@@ -1091,4 +1090,4 @@ class Decompiler(ast.NodeVisitor):
     def visit_alias(self, node: ast.alias) -> None:
         self.write(node.name)
         if node.asname is not None:
-            self.write(" as %s" % node.asname)
+            self.write(f" as {node.asname}")
