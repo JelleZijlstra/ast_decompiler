@@ -560,9 +560,7 @@ class Decompiler(ast.NodeVisitor):
         with self.parenthesize_if(my_prec <= parent_prec):
             op = "and" if isinstance(node.op, ast.And) else "or"
             self.write_expression_list(
-                node.values,
-                separator=f" {op} ",
-                final_separator_if_multiline=False,
+                node.values, separator=f" {op} ", final_separator_if_multiline=False
             )
 
     def visit_BinOp(self, node: ast.BinOp) -> None:

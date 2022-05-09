@@ -9,9 +9,7 @@ def check_split(original: str, multiline: str, length_reduction: int = 2) -> Non
 
 
 def test_with_prefix() -> None:
-    prefixes = [
-        "from x import",
-    ]
+    prefixes = ["from x import"]
     for prefix in prefixes:
         check_split(
             f"{prefix} a, b, c\n",
