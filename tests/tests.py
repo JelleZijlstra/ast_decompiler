@@ -70,7 +70,7 @@ def assert_decompiles(
             result.splitlines(), decompile_result.splitlines()
         ):
             print(line)
-        assert False, "failed to decompile %s" % code
+        assert False, f"failed to decompile {code}"
 
 
 def only_on_version(py_version: int) -> Callable[[_CallableT], _CallableT]:

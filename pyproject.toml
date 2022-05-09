@@ -38,3 +38,17 @@ email = "jelle.zijlstra@gmail.com"
 [tool.flit.sdist]
 include = ["CHANGELOG", "README.rst", "*/test*.py"]
 exclude = []
+
+[tool.pyanalyze]
+paths = ["ast_decompiler", "tests"]
+import_paths = ["."]
+
+possibly_undefined_name = true
+use_fstrings = true
+missing_return_annotation = true
+missing_parameter_annotation = true
+unused_variable = true
+value_always_true = true
+suggested_parameter_type = true
+suggested_return_type = true
+incompatible_override = true
