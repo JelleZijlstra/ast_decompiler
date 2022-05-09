@@ -594,8 +594,9 @@ class Decompiler(ast.NodeVisitor):
             self.visit(node.operand)
 
     def visit_Lambda(self, node: ast.Lambda) -> None:
+        parent_node = self.get_parent_node()
         should_parenthesize = isinstance(
-            self.get_parent_node(),
+            parent_node,
             (
                 ast.BinOp,
                 ast.UnaryOp,
@@ -606,6 +607,10 @@ class Decompiler(ast.NodeVisitor):
                 ast.Call,
                 ast.BoolOp,
             ),
+        ) or (
+            # Parens are required in 3.9+, but let's just always add them.
+            isinstance(parent_node, ast.comprehension)
+            and node in parent_node.ifs
         )
         with self.parenthesize_if(should_parenthesize):
             self.write("lambda")

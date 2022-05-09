@@ -274,6 +274,7 @@ def test_Lambda() -> None:
     check("lambda: None")
     check("lambda x: None")
     check("lambda x: x ** x")
+    check("[x for x in y if (lambda: x)]")
 
 
 def test_IfExp() -> None:

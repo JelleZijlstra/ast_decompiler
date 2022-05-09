@@ -1,4 +1,5 @@
 unreleased
+- Fix incorrect decompilation of lambdas in comprehension guards on Python 3.9 and higher
 - Fix decompilation for dict `**` unpacking
 - Modernize CI and packaging setup
 - Fix tests under Python 3.9
