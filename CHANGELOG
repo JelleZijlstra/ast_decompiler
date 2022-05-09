@@ -1,3 +1,7 @@
+unreleased
+- Fix tests under Python 3.9
+- Add explicit LICENSE file
+
 version 0.4.0 (May 7, 2020)
 - Support Python 3.7 and 3.8 (thanks to Luke Plant)
 - Allow keyword-only arguments without default values (thanks to Shantanu Jain)

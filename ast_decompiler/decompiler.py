@@ -978,6 +978,7 @@ class Decompiler(ast.NodeVisitor):
             self.write("()")
         else:
             parent_node = self.get_parent_node()
+            allow_parens = True
             should_parenthesize = not isinstance(
                 parent_node,
                 (ast.Expr, ast.Assign, ast.AugAssign, ast.Return, ast.Yield),
@@ -987,6 +988,10 @@ class Decompiler(ast.NodeVisitor):
                 and node is parent_node.target
             ):
                 should_parenthesize = False
+            # Only relevant on 3.9+, where the ExtSlice class no longer exists.
+            if isinstance(parent_node, ast.Subscript) and node is parent_node.slice:
+                should_parenthesize = False
+                allow_parens = False
             # https://bugs.python.org/issue32117
             if (
                 hasattr(ast, "Starred")
@@ -1001,7 +1006,7 @@ class Decompiler(ast.NodeVisitor):
                     self.write(",")
                 else:
                     self.write_expression_list(
-                        node.elts, need_parens=not should_parenthesize
+                        node.elts, need_parens=allow_parens and not should_parenthesize
                     )
 
     # slice
