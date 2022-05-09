@@ -40,7 +40,7 @@ def check(code: str) -> None:
         print(new_code)
         for line in difflib.unified_diff(dumped.split(), new_dumped.split()):
             print(line)
-        assert False, "%s != %s" % (dumped, new_dumped)
+        assert False, f"{dumped} != {new_dumped}"
 
 
 def assert_decompiles(

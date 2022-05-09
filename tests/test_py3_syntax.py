@@ -1,4 +1,3 @@
-# coding: utf-8
 from .tests import check, skip_before, skip_after
 
 
@@ -292,7 +291,7 @@ def test_async_await_in_fstring() -> None:
 
 @skip_before((3, 7))
 def test_too_many_args() -> None:
-    args = ", ".join("x{}".format(i) for i in range(300))
+    args = ", ".join(f"x{i}" for i in range(300))
     check(
         """
 def f({}):
