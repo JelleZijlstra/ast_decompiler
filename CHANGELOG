@@ -1,4 +1,5 @@
 unreleased
+- Modernize CI and packaging setup
 - Fix tests under Python 3.9
 - Add explicit LICENSE file
 

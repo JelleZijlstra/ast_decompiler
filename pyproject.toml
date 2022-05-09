@@ -1,0 +1,40 @@
+# Build system requirements.
+[build-system]
+requires = ["flit_core >=3.4,<4"]
+build-backend = "flit_core.buildapi"
+
+# Project metadata
+[project]
+name = "ast_decompiler"
+version = "0.4.0"
+description = "Python module to decompile AST to Python code"
+readme = "README.rst"
+requires-python = ">=3.6"
+urls.Home = "https://github.com/JelleZijlstra/ast_decompiler"
+license.file = "LICENSE"
+keywords = ["ast", "decompiler"]
+# Classifiers list: https://pypi.org/classifiers/
+classifiers = [
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Python Software Foundation License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Topic :: Software Development",
+]
+
+# Project metadata -- authors. Flit stores this as a list of dicts, so it can't
+# be inline above.
+[[project.authors]]
+name = "Jelle Zijlstra"
+email = "jelle.zijlstra@gmail.com"
+
+[tool.flit.sdist]
+include = ["CHANGELOG", "README.rst", "*/test*.py"]
+exclude = []
