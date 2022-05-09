@@ -19,6 +19,8 @@ def check(code):
     try:
         new_tree = ast.parse(new_code)
     except SyntaxError as e:
+        if e.lineno is None:
+            raise
         print(">>> syntax error:")
         lineno = e.lineno - 1
         min_lineno = max(0, lineno - 3)
