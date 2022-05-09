@@ -387,6 +387,8 @@ def test_Attribute():
 def test_Subscript():
     check("x[y]")
     check("(-0j)[y]")
+    check("x[y]")
+    check("Callable[[P, Iterator], T]")
 
 
 def test_Name():
