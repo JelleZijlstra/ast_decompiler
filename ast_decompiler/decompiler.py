@@ -550,7 +550,7 @@ class Decompiler(ast.NodeVisitor):
         parent_prec = self.precedence_of_node(parent_node)
         if my_prec < parent_prec:
             should_parenthesize = True
-        elif my_prec == parent_prec:
+        elif my_prec == parent_prec and parent_node is not None:
             if isinstance(node.op, ast.Pow):
                 should_parenthesize = node == parent_node.left
             else:
@@ -767,11 +767,12 @@ class Decompiler(ast.NodeVisitor):
             and number >= 0
             and isinstance(self.get_parent_node(), ast.Attribute)
         )
-        should_parenthesize = should_parenthesize or (
-            isinstance(number, complex)
-            and number.real == 0.0
-            and (number.imag < 0 or number.imag == -0.0)
-        )
+        if not should_parenthesize:
+            should_parenthesize = (
+                isinstance(number, complex)
+                and number.real == 0.0
+                and (number.imag < 0 or number.imag == -0.0)
+            )
         if not should_parenthesize and (isinstance(number, complex) or number < 0):
             parent_node = self.get_parent_node()
             should_parenthesize = (
