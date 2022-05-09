@@ -5,14 +5,17 @@ Helpers for tests.
 """
 
 import ast
+from typing import Any, Tuple, Callable, TypeVar
 from ast_decompiler import decompile
 import difflib
 import sys
 
 VERSION = sys.version_info.major
 
+_CallableT = TypeVar("_CallableT", bound=Callable[..., None])
 
-def check(code):
+
+def check(code: str) -> None:
     """Checks that the code remains the same when decompiled and re-parsed."""
     tree = ast.parse(code)
     new_code = decompile(tree)
@@ -40,9 +43,21 @@ def check(code):
         assert False, "%s != %s" % (dumped, new_dumped)
 
 
-def assert_decompiles(code, result, do_check=True, **kwargs):
+def assert_decompiles(
+    code: str,
+    result: str,
+    do_check: bool = True,
+    indentation: int = 4,
+    line_length: int = 100,
+    starting_indentation: int = 0,
+) -> None:
     """Asserts that code, when parsed, decompiles into result."""
-    decompile_result = decompile(ast.parse(code), **kwargs)
+    decompile_result = decompile(
+        ast.parse(code),
+        indentation=indentation,
+        line_length=line_length,
+        starting_indentation=starting_indentation,
+    )
     if do_check:
         check(decompile_result)
     if result != decompile_result:
@@ -58,46 +73,46 @@ def assert_decompiles(code, result, do_check=True, **kwargs):
         assert False, "failed to decompile %s" % code
 
 
-def only_on_version(py_version):
+def only_on_version(py_version: int) -> Callable[[_CallableT], _CallableT]:
     """Decorator that runs a test only if the Python version matches."""
     if py_version != VERSION:
 
-        def decorator(fn):
+        def decorator(fn: Callable[..., Any]) -> Callable[..., None]:
             return lambda *args: None
 
     else:
 
-        def decorator(fn):
+        def decorator(fn: _CallableT) -> _CallableT:
             return fn
 
     return decorator
 
 
-def skip_before(py_version):
+def skip_before(py_version: Tuple[int, int]) -> Callable[[_CallableT], _CallableT]:
     """Decorator that skips a test on Python versions before py_version."""
     if sys.version_info < py_version:
 
-        def decorator(fn):
+        def decorator(fn: Callable[..., Any]) -> Callable[..., None]:
             return lambda *args: None
 
     else:
 
-        def decorator(fn):
+        def decorator(fn: _CallableT) -> _CallableT:
             return fn
 
     return decorator
 
 
-def skip_after(py_version):
+def skip_after(py_version: Tuple[int, int]) -> Callable[[_CallableT], _CallableT]:
     """Decorator that skips a test on Python versions after py_version."""
     if sys.version_info > py_version:
 
-        def decorator(fn):
-            return lambda *args: None
+        def decorator(fn: Callable[..., Any]) -> Callable[..., None]:
+            return lambda *args, **kwargs: None
 
     else:
 
-        def decorator(fn):
+        def decorator(fn: _CallableT) -> _CallableT:
             return fn
 
     return decorator

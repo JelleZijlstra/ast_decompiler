@@ -1,7 +1,7 @@
 from .tests import assert_decompiles
 
 
-def test_indentation():
+def test_indentation() -> None:
     assert_decompiles(
         """
 if x:
@@ -14,7 +14,7 @@ if x:
     )
 
 
-def test_starting_indentation():
+def test_starting_indentation() -> None:
     assert_decompiles(
         """3""",
         """    3

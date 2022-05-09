@@ -1,7 +1,7 @@
 from .tests import check, only_on_version
 
 
-def test_Yield():
+def test_Yield() -> None:
     check("def f(): yield")
     check("def f(): x = yield 3")
     check("def f(): return (yield 3)")
@@ -11,7 +11,7 @@ def test_Yield():
     check("def f(): (yield a), b")
 
 
-def test_Tuple():
+def test_Tuple() -> None:
     check("def f(): return x, y")
     check("def f(): yield x, y")
     check("[(1, 2)]")
@@ -25,17 +25,17 @@ def test_Tuple():
 
 
 @only_on_version(2)
-def test_tuple_in_listcomp():
+def test_tuple_in_listcomp() -> None:
     check("[(a, b) for f in c, d]")
 
 
 @only_on_version(2)
-def test_Tuple_arg():
+def test_Tuple_arg() -> None:
     check("def f((a, b)): pass")
     check("lambda (a, b): None")
 
 
-def test_Lambda():
+def test_Lambda() -> None:
     check("lambda x: lambda y: x + y")
     check("lambda x: y if z else x")
     check("(lambda x: y) if z else x")
@@ -43,7 +43,7 @@ def test_Lambda():
     check("1 + (lambda x: x)")
 
 
-def test_IfExp():
+def test_IfExp() -> None:
     check("y if x else a, b")
     check("(yield y) if (yield x) else (yield a), b")
     check("y if x else z if a else b")
@@ -56,7 +56,7 @@ def test_IfExp():
     check("[x for x in (y if z else x)]")
 
 
-def test_BinOp():
+def test_BinOp() -> None:
     check("(a ** b) ** c")
     check("a ** b ** c")
     check("a ** (b ** c)")
@@ -67,7 +67,7 @@ def test_BinOp():
     check("x * (a or b)")
 
 
-def test_UnaryOp():
+def test_UnaryOp() -> None:
     check("not not x")
     check("-(not x)")
     check("not (-x)")
@@ -75,7 +75,7 @@ def test_UnaryOp():
     check("-((-1)**x)")
 
 
-def test_Call():
+def test_Call() -> None:
     check("f(a, b)")
     check("f((a, b))")
     check("(a, b)(a, b)")

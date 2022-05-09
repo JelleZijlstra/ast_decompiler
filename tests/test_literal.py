@@ -1,7 +1,7 @@
 from .tests import assert_decompiles, only_on_version
 
 
-def test_With():
+def test_With() -> None:
     assert_decompiles(
         "with x as y, a as b: pass",
         """with x as y, a as b:
@@ -11,7 +11,7 @@ def test_With():
 
 
 @only_on_version(2)
-def test_With_collapsed():
+def test_With_collapsed() -> None:
     assert_decompiles(
         """
 with x as y:
@@ -24,7 +24,7 @@ with x as y:
     )
 
 
-def test_TryFinally():
+def test_TryFinally() -> None:
     assert_decompiles(
         """
 try:
@@ -49,7 +49,7 @@ finally:
 
 
 @only_on_version(2)
-def test_TryFinally_collapsed():
+def test_TryFinally_collapsed() -> None:
     assert_decompiles(
         """
 try:
@@ -70,7 +70,7 @@ finally:
     )
 
 
-def test_If():
+def test_If() -> None:
     assert_decompiles(
         """
 if x: pass
@@ -112,7 +112,7 @@ else:
     )
 
 
-def test_BinOp():
+def test_BinOp() -> None:
     assert_decompiles(
         """
 f(a * b)
