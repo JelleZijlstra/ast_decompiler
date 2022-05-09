@@ -6,7 +6,7 @@ Implementation of the decompiler class.
 import ast
 from contextlib import contextmanager
 import sys
-from typing import Any, Dict, Generator, Iterable, Optional, Type
+from typing import Any, Dict, Generator, Iterable, Optional, Sequence, Type, Union
 
 _OP_TO_STR = {
     ast.Add: "+",
@@ -163,10 +163,11 @@ class Decompiler(ast.NodeVisitor):
     def write_expression_list(
         self,
         nodes,
-        separator=", ",
-        allow_newlines=True,
-        need_parens=True,
-        final_separator_if_multiline=True,
+        *,
+        separator: str = ", ",
+        allow_newlines: bool = True,
+        need_parens: bool = True,
+        final_separator_if_multiline: bool = True,
     ) -> None:
         """Writes a list of nodes, separated by separator.
 
@@ -245,27 +246,29 @@ class Decompiler(ast.NodeVisitor):
         else:
             yield
 
-    def generic_visit(self, node):
+    def generic_visit(self, node: ast.AST) -> None:
         raise NotImplementedError("missing visit method for %r" % node)
 
-    def visit_Module(self, node) -> None:
+    def visit_Module(self, node: Union[ast.Module, ast.Interactive]) -> None:
         for line in node.body:
             self.visit(line)
 
     visit_Interactive = visit_Module
 
-    def visit_Expression(self, node) -> None:
+    def visit_Expression(self, node: ast.Expression) -> None:
         self.visit(node.body)
 
     # Multi-line statements
 
-    def visit_FunctionDef(self, node) -> None:
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
         self.write_function_def(node)
 
-    def visit_AsyncFunctionDef(self, node) -> None:
+    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
         self.write_function_def(node, is_async=True)
 
-    def write_function_def(self, node, is_async=False) -> None:
+    def write_function_def(
+        self, node: Union[ast.FunctionDef, ast.AsyncFunctionDef], is_async: bool = False
+    ) -> None:
         self.write_newline()
         for decorator in node.decorator_list:
             self.write_indentation()
@@ -279,7 +282,7 @@ class Decompiler(ast.NodeVisitor):
         self.write("def %s(" % node.name)
         self.visit(node.args)
         self.write(")")
-        if getattr(node, "returns", None):
+        if node.returns is not None:
             self.write(" -> ")
             self.visit(node.returns)
         self.write(":")
@@ -287,7 +290,7 @@ class Decompiler(ast.NodeVisitor):
 
         self.write_suite(node.body)
 
-    def visit_ClassDef(self, node) -> None:
+    def visit_ClassDef(self, node: ast.ClassDef) -> None:
         self.write_newline()
         self.write_newline()
         for decorator in node.decorator_list:
@@ -304,13 +307,15 @@ class Decompiler(ast.NodeVisitor):
         self.write_newline()
         self.write_suite(node.body)
 
-    def visit_For(self, node) -> None:
+    def visit_For(self, node: ast.For) -> None:
         self.write_for(node)
 
-    def visit_AsyncFor(self, node) -> None:
+    def visit_AsyncFor(self, node: ast.AsyncFor) -> None:
         self.write_for(node, is_async=True)
 
-    def write_for(self, node, is_async=False) -> None:
+    def write_for(
+        self, node: Union[ast.For, ast.AsyncFor], is_async: bool = False
+    ) -> None:
         self.write_indentation()
         if is_async:
             self.write("async ")
@@ -323,7 +328,7 @@ class Decompiler(ast.NodeVisitor):
         self.write_suite(node.body)
         self.write_else(node.orelse)
 
-    def visit_While(self, node) -> None:
+    def visit_While(self, node: ast.While) -> None:
         self.write_indentation()
         self.write("while ")
         self.visit(node.test)
@@ -332,7 +337,7 @@ class Decompiler(ast.NodeVisitor):
         self.write_suite(node.body)
         self.write_else(node.orelse)
 
-    def visit_If(self, node) -> None:
+    def visit_If(self, node: ast.If) -> None:
         self.write_indentation()
         self.write("if ")
         self.visit(node.test)
@@ -351,17 +356,19 @@ class Decompiler(ast.NodeVisitor):
             self.write_suite(node.body)
         self.write_else(node.orelse)
 
-    def write_else(self, orelse) -> None:
+    def write_else(self, orelse: Sequence[ast.AST]) -> None:
         if orelse:
             self.write_indentation()
             self.write("else:")
             self.write_newline()
             self.write_suite(orelse)
 
-    def visit_AsyncWith(self, node) -> None:
+    def visit_AsyncWith(self, node: ast.AsyncWith) -> None:
         self.visit_With(node, is_async=True)
 
-    def visit_With(self, node, is_async=False) -> None:
+    def visit_With(
+        self, node: Union[ast.With, ast.AsyncWith], is_async: bool = False
+    ) -> None:
         self.write_indentation()
         if is_async:
             self.write("async ")
@@ -680,7 +687,7 @@ class Decompiler(ast.NodeVisitor):
             end = ")"
         self.visit_comp(node, start, end)
 
-    def visit_comp(self, node, start, end) -> None:
+    def visit_comp(self, node, start: str, end: str) -> None:
         self.write(start)
         self.write_expression_list(
             [node.elt] + node.generators, separator=" ", need_parens=False
@@ -764,10 +771,10 @@ class Decompiler(ast.NodeVisitor):
         self.visit(node.value)
         self.write("`")
 
-    def visit_Num(self, node) -> None:
+    def visit_Num(self, node: ast.Num) -> None:
         self.write_number(node.n)
 
-    def write_number(self, number) -> None:
+    def write_number(self, number: Union[int, float, complex]) -> None:
         should_parenthesize = (
             isinstance(number, int)
             and number >= 0
@@ -803,10 +810,10 @@ class Decompiler(ast.NodeVisitor):
             else:
                 self.write(repr(number))
 
-    def visit_Str(self, node) -> None:
+    def visit_Str(self, node: ast.Str) -> None:
         self.write_string(node.s, kind=None)
 
-    def write_string(self, string_value, kind=None) -> None:
+    def write_string(self, string_value: str, kind: Optional[str] = None) -> None:
         if kind is not None:
             self.write(kind)
         if self.has_parent_of_type(ast.FormattedValue):
@@ -818,7 +825,7 @@ class Decompiler(ast.NodeVisitor):
         self.write(s.replace(delimiter, "\\" + delimiter))
         self.write(delimiter)
 
-    def visit_FormattedValue(self, node):
+    def visit_FormattedValue(self, node: ast.FormattedValue) -> None:
         has_parent = isinstance(self.get_parent_node(), ast.JoinedStr)
         with self.f_literalise_if(not has_parent):
             self.write("{")
@@ -833,6 +840,8 @@ class Decompiler(ast.NodeVisitor):
                 self.write(" ")
             self.visit(node.value)
             if node.conversion != -1:
+                # https://github.com/python/typeshed/pull/7810
+                # static analysis: ignore[incompatible_argument]
                 self.write("!%s" % chr(node.conversion))
             if node.format_spec is not None:
                 self.write(":")
@@ -868,7 +877,7 @@ class Decompiler(ast.NodeVisitor):
     def visit_NameConstant(self, node) -> None:
         self.write(repr(node.value))
 
-    def visit_Constant(self, node):
+    def visit_Constant(self, node: ast.Constant) -> None:
         if node.value is Ellipsis:
             self.write("...")
         elif isinstance(node.value, str):
@@ -882,30 +891,30 @@ class Decompiler(ast.NodeVisitor):
         else:
             raise NotImplementedError(ast.dump(node))
 
-    def visit_Attribute(self, node) -> None:
+    def visit_Attribute(self, node: ast.Attribute) -> None:
         self.visit(node.value)
         self.write(".%s" % node.attr)
 
-    def visit_Subscript(self, node) -> None:
+    def visit_Subscript(self, node: ast.Subscript) -> None:
         self.visit(node.value)
         self.write("[")
         self.visit(node.slice)
         self.write("]")
 
-    def visit_Starred(self, node) -> None:
+    def visit_Starred(self, node: ast.Starred) -> None:
         # TODO precedence
         self.write("*")
         self.visit(node.value)
 
-    def visit_Name(self, node) -> None:
+    def visit_Name(self, node: ast.Name) -> None:
         self.write(node.id)
 
-    def visit_List(self, node) -> None:
+    def visit_List(self, node: ast.List) -> None:
         self.write("[")
         self.write_expression_list(node.elts, need_parens=False)
         self.write("]")
 
-    def visit_Tuple(self, node) -> None:
+    def visit_Tuple(self, node: ast.Tuple) -> None:
         if not node.elts:
             self.write("()")
         else:
@@ -943,10 +952,10 @@ class Decompiler(ast.NodeVisitor):
 
     # slice
 
-    def visit_Ellipsis(self, node) -> None:
+    def visit_Ellipsis(self, node: ast.Ellipsis) -> None:
         self.write("...")
 
-    def visit_Slice(self, node) -> None:
+    def visit_Slice(self, node: ast.Slice) -> None:
         if node.lower:
             self.visit(node.lower)
         self.write(":")
@@ -981,8 +990,8 @@ class Decompiler(ast.NodeVisitor):
         visit_Del
     ) = visit_AugLoad = visit_AugStore = visit_Param = lambda self, node: None
 
-    def visit_comprehension(self, node) -> None:
-        if getattr(node, "is_async", False):
+    def visit_comprehension(self, node: ast.comprehension) -> None:
+        if node.is_async:
             self.write("async ")
         self.write("for ")
         self.visit(node.target)
@@ -992,7 +1001,7 @@ class Decompiler(ast.NodeVisitor):
             self.write(" if ")
             self.visit(expr)
 
-    def visit_ExceptHandler(self, node) -> None:
+    def visit_ExceptHandler(self, node: ast.ExceptHandler) -> None:
         self.write_indentation()
         self.write("except")
         if node.type:
@@ -1005,9 +1014,9 @@ class Decompiler(ast.NodeVisitor):
         self.write_newline()
         self.write_suite(node.body)
 
-    def visit_arguments(self, node) -> None:
+    def visit_arguments(self, node: ast.arguments) -> None:
         args = []
-        if hasattr(node, "posonlyargs") and node.posonlyargs:
+        if node.posonlyargs:
             args += node.posonlyargs
             args.append(ast.Name(id="/"))
 
@@ -1025,7 +1034,7 @@ class Decompiler(ast.NodeVisitor):
             args.append(StarArg(ast.Name(id=node.vararg.arg)))
 
         # TODO write a * if there are kwonly args but no vararg
-        if hasattr(node, "kw_defaults"):
+        if node.kw_defaults:
             if node.kwonlyargs and not node.vararg:
                 args.append(StarArg(ast.Name(id="")))
             num_kwarg_defaults = len(node.kw_defaults)
@@ -1060,7 +1069,7 @@ class Decompiler(ast.NodeVisitor):
             # TODO precedence
             self.visit(node.annotation)
 
-    def visit_keyword(self, node) -> None:
+    def visit_keyword(self, node: ast.keyword) -> None:
         if node.arg is None:
             # in py3, **kwargs is a keyword whose arg is None
             self.write("**")
@@ -1068,7 +1077,7 @@ class Decompiler(ast.NodeVisitor):
             self.write(node.arg + "=")
         self.visit(node.value)
 
-    def visit_alias(self, node) -> None:
+    def visit_alias(self, node: ast.alias) -> None:
         self.write(node.name)
         if node.asname is not None:
             self.write(" as %s" % node.asname)

@@ -1,7 +1,7 @@
 from .tests import assert_decompiles
 
 
-def check_split(original, multiline, length_reduction=2) -> None:
+def check_split(original: str, multiline: str, length_reduction: int = 2) -> None:
     assert_decompiles(original, original, line_length=len(original))
     assert_decompiles(
         original, multiline, line_length=len(original.strip()) - length_reduction
