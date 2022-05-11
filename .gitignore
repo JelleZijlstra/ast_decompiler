@@ -4,3 +4,4 @@ build/
 dist/
 ast_decompiler.egg-info/
 .tox/
+.hypothesis/
