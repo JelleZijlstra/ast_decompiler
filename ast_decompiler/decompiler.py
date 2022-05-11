@@ -4,7 +4,9 @@ Implementation of the decompiler class.
 
 """
 import ast
+import cmath
 from contextlib import contextmanager
+import math
 import sys
 from typing import Any, Dict, Generator, Iterable, Optional, Sequence, Type, Union
 
@@ -808,10 +810,12 @@ class Decompiler(ast.NodeVisitor):
                 and hasattr(parent_node, "lineno")
             )
         with self.parenthesize_if(should_parenthesize):
-            if isinstance(number, float) and abs(number) > sys.float_info.max:
+            if isinstance(number, float) and math.isinf(number):
                 # otherwise we write inf, which won't be parsed back right
                 # I don't know of any way to write nan with a literal
                 self.write("1e1000" if number > 0 else "-1e1000")
+            elif isinstance(number, complex) and cmath.isinf(number):
+                self.write("1e1000j" if number.imag > 0 else "-1e1000j")
             elif isinstance(number, (int, float)) and number < 0:
                 # needed for precedence to work correctly
                 me = self.node_stack.pop()
