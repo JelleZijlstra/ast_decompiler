@@ -8,7 +8,7 @@ a coverage-guided fuzzer I'm working on.
 import hypothesmith
 from hypothesis import HealthCheck, given, settings
 
-from .tests import check
+from ast_decompiler.check import check
 
 
 # This test uses the Hypothesis and Hypothesmith libraries to generate random
