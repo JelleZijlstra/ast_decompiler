@@ -892,18 +892,21 @@ class Decompiler(ast.NodeVisitor):
         self.write(repr(node.value))
 
     def visit_Constant(self, node: ast.Constant) -> None:
-        if node.value is Ellipsis:
+        self.write_constant(node.value, node.kind)
+
+    def write_constant(self, value: object, kind: Optional[str] = None) -> None:
+        if value is Ellipsis:
             self.write("...")
-        elif isinstance(node.value, str):
-            self.write_string(node.value, node.kind)
-        elif isinstance(node.value, bytes):
-            self.write(repr(node.value))
-        elif isinstance(node.value, (int, float, complex)):
-            self.write_number(node.value)
-        elif isinstance(node.value, (bool, type(None))):
-            self.write(repr(node.value))
+        elif isinstance(value, str):
+            self.write_string(value, kind)
+        elif isinstance(value, bytes):
+            self.write(repr(value))
+        elif isinstance(value, (int, float, complex)):
+            self.write_number(value)
+        elif isinstance(value, (bool, type(None))):
+            self.write(repr(value))
         else:
-            raise NotImplementedError(ast.dump(node))
+            raise NotImplementedError(repr(value))
 
     def visit_Attribute(self, node: ast.Attribute) -> None:
         self.visit(node.value)
@@ -1094,3 +1097,86 @@ class Decompiler(ast.NodeVisitor):
         self.write(node.name)
         if node.asname is not None:
             self.write(f" as {node.asname}")
+
+    def visit_Match(self, node: "ast.Match") -> None:
+        self.write_indentation()
+        self.write("match ")
+        self.visit(node.subject)
+        self.write(":")
+        self.write_newline()
+        self.write_suite(node.cases)
+
+    def visit_match_case(self, node: "ast.match_case") -> None:
+        self.write_indentation()
+        self.write("case ")
+        self.visit(node.pattern)
+        if node.guard is not None:
+            self.write(" if ")
+            self.visit(node.guard)
+        self.write(":")
+        self.write_newline()
+        self.write_suite(node.body)
+
+    def visit_MatchValue(self, node: "ast.MatchValue") -> None:
+        self.visit(node.value)
+
+    def visit_MatchSingleton(self, node: "ast.MatchSingleton") -> None:
+        self.write_constant(node.value)
+
+    def visit_MatchSequence(self, node: "ast.MatchSequence") -> None:
+        self.write("[")
+        self.write_expression_list(node.patterns, need_parens=False)
+        self.write("]")
+
+    def visit_MatchMapping(self, node: "ast.MatchMapping") -> None:
+        self.write("{")
+        items = [
+            KeyValuePair(key, value) for key, value in zip(node.keys, node.patterns)
+        ]
+        self.write_expression_list(items, need_parens=False)
+        if node.rest is not None:
+            if node.keys:
+                self.write(", ")
+            self.write(f"**{node.rest}")
+        self.write("}")
+
+    def visit_MatchClass(self, node: "ast.MatchClass") -> None:
+        self.visit(node.cls)
+        self.write("(")
+        self.write_expression_list(node.patterns, need_parens=False)
+        for i, (attr, pattern) in enumerate(zip(node.kwd_attrs, node.kwd_patterns)):
+            if i > 0 or node.patterns:
+                self.write(", ")
+            self.write(attr)
+            self.write("=")
+            self.visit(pattern)
+        self.write(")")
+
+    def visit_MatchAs(self, node: "ast.MatchAs") -> None:
+        if node.pattern is None:
+            if node.name is None:
+                self.write("_")
+            else:
+                self.write(node.name)
+        else:
+            parent_node = self.get_parent_node()
+            with self.parenthesize_if(
+                isinstance(parent_node, (ast.MatchOr, ast.MatchAs))
+            ):
+                self.visit(node.pattern)
+                self.write(" as ")
+                self.write(node.name)
+
+    def visit_MatchOr(self, node: "ast.MatchOr") -> None:
+        parent_node = self.get_parent_node()
+        with self.parenthesize_if(isinstance(parent_node, ast.MatchOr)):
+            self.write_expression_list(
+                node.patterns, need_parens=False, separator=" | "
+            )
+
+    def visit_MatchStar(self, node: "ast.MatchStar") -> None:
+        self.write("*")
+        if node.name is None:
+            self.write("_")
+        else:
+            self.write(node.name)
