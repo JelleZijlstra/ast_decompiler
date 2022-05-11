@@ -837,7 +837,7 @@ class Decompiler(ast.NodeVisitor):
         if isinstance(self.get_parent_node(), ast.Expr) and '"""' not in string_value:
             self.write('"""')
             s = string_value.encode("unicode-escape").decode("ascii")
-            s = s.replace("\\n", "\n").replace("\\r", "\r")
+            s = s.replace("\\n", "\n")
             self.write(s)
             self.write('"""')
             return
