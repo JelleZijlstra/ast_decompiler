@@ -1,6 +1,6 @@
 import ast
 from ast_decompiler import decompile
-from .tests import check, only_on_version
+from .tests import assert_decompiles, check, only_on_version
 
 
 def test_non_module() -> None:
@@ -377,6 +377,24 @@ def test_Str() -> None:
         """from __future__ import unicode_literals
 b'foo'
 """
+    )
+    check('"a\\nb"')
+    assert_decompiles(
+        '''def f():
+    """Doc.
+
+    String.
+
+    """
+''',
+        '''
+def f():
+    """Doc.
+
+    String.
+
+    """
+''',
     )
 
 
