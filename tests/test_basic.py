@@ -1,6 +1,6 @@
 import ast
 from ast_decompiler import decompile
-from .tests import check, only_on_version
+from .tests import assert_decompiles, check, only_on_version
 
 
 def test_non_module() -> None:
@@ -359,6 +359,8 @@ def test_Num() -> None:
     check("2147483648")
     check("1e1000")  # check that we don't turn it info inf
     check("-1e1000")
+    check("1E+12_7_3J")
+    check("-1E+12_7_3J")
     check("-(1)")
 
 
@@ -377,6 +379,24 @@ def test_Str() -> None:
         """from __future__ import unicode_literals
 b'foo'
 """
+    )
+    check('"a\\nb"')
+    assert_decompiles(
+        '''def f():
+    """Doc.
+
+    String.
+
+    """
+''',
+        '''
+def f():
+    """Doc.
+
+    String.
+
+    """
+''',
     )
 
 

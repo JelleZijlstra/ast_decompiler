@@ -4,7 +4,9 @@ Implementation of the decompiler class.
 
 """
 import ast
+import cmath
 from contextlib import contextmanager
+import math
 import sys
 from typing import Any, Dict, Generator, Iterable, Optional, Sequence, Type, Union
 
@@ -808,10 +810,12 @@ class Decompiler(ast.NodeVisitor):
                 and hasattr(parent_node, "lineno")
             )
         with self.parenthesize_if(should_parenthesize):
-            if isinstance(number, float) and abs(number) > sys.float_info.max:
+            if isinstance(number, float) and math.isinf(number):
                 # otherwise we write inf, which won't be parsed back right
                 # I don't know of any way to write nan with a literal
                 self.write("1e1000" if number > 0 else "-1e1000")
+            elif isinstance(number, complex) and cmath.isinf(number):
+                self.write("1e1000j" if number.imag > 0 else "-1e1000j")
             elif isinstance(number, (int, float)) and number < 0:
                 # needed for precedence to work correctly
                 me = self.node_stack.pop()
@@ -830,13 +834,21 @@ class Decompiler(ast.NodeVisitor):
     def write_string(self, string_value: str, kind: Optional[str] = None) -> None:
         if kind is not None:
             self.write(kind)
+        if isinstance(self.get_parent_node(), ast.Expr) and '"""' not in string_value:
+            self.write('"""')
+            s = string_value.encode("unicode-escape").decode("ascii")
+            s = s.replace("\\n", "\n").replace("\\r", "\r")
+            self.write(s)
+            self.write('"""')
+            return
         if self.has_parent_of_type(ast.FormattedValue):
             delimiter = '"'
         else:
             delimiter = "'"
         self.write(delimiter)
         s = string_value.encode("unicode-escape").decode("ascii")
-        self.write(s.replace(delimiter, "\\" + delimiter))
+        s = s.replace(delimiter, "\\" + delimiter)
+        self.write(s)
         self.write(delimiter)
 
     def visit_FormattedValue(self, node: ast.FormattedValue) -> None:
