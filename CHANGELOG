@@ -1,4 +1,5 @@
 unreleased
+- Fix decompilation of f-strings containing escaped braces
 - Add support for Python 3.10 pattern matching
 - Fix incorrect decompilation of lambdas in comprehension guards on Python 3.9 and higher
 - Fix decompilation for dict `**` unpacking
