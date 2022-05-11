@@ -5,16 +5,15 @@ generation.  You can run this file with `python`, `pytest`, or (soon)
 a coverage-guided fuzzer I'm working on.
 """
 
+import hypothesmith
+from hypothesis import HealthCheck, given, settings
+
 try:
     import atheris
 except ImportError:
-    import hypothesmith
-    from hypothesis import HealthCheck, given, settings
     from ast_decompiler.check import check
 else:
     with atheris.instrument_imports():
-        import hypothesmith
-        from hypothesis import HealthCheck, given, settings
         from ast_decompiler.check import check
 
 
