@@ -341,10 +341,15 @@ def parse(family):
 
 @skip_before((3, 8))
 def test_assignment_expression() -> None:
+    # Some of these can be used unparenthesized in 3.10+ but we don't bother.
     check(
         """
 if (x := 3):
     pass
+{(y := 4)}
+{(z := 5) for a in b}
+lst[(alpha := 3)]
+lst[(beta := 4):(gamma := 5)]
 """
     )
 
