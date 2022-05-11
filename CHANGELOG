@@ -1,4 +1,4 @@
-unreleased
+version 0.5.0 (May 10, 2022)
 - Add `py.typed`
 - Fix decompilation of f-strings containing escaped braces
 - Preserve literal newlines in docstrings
