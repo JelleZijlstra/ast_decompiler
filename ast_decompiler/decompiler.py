@@ -893,6 +893,8 @@ class Decompiler(ast.NodeVisitor):
                         value.s.encode("unicode-escape")
                         .decode("ascii")
                         .replace("'", r"\'")
+                        .replace("{", "{{")
+                        .replace("}", "}}")
                     )
                 else:
                     self.visit(value)

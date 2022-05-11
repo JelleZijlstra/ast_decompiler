@@ -209,6 +209,9 @@ def test_FormattedValue() -> None:
     check(r"f'{a}\n'")
     check(r"f'{a}\t'")
     check("f'{a}é'")
+    check('f"{{"')
+    check('f"}}"')
+    check('f"{{{a}"')
 
 
 @skip_before((3, 0))
