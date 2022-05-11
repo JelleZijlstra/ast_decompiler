@@ -398,6 +398,7 @@ def f():
     """
 ''',
     )
+    check('''def f(): "a\\rb"''')
 
 
 def test_Attribute() -> None:
