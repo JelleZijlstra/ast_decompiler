@@ -21,7 +21,6 @@ else:
 # syntatically-valid Python source code and run Black in odd modes.
 @settings(
     max_examples=1000,  # roughly 1k tests/minute, or half that under coverage
-    derandomize=True,  # deterministic mode to avoid CI flakiness
     deadline=None,  # ignore Hypothesis' health checks; we already know that
     suppress_health_check=HealthCheck.all(),  # this is slow and filter-heavy.
 )
