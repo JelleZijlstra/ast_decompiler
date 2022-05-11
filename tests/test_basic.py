@@ -359,6 +359,8 @@ def test_Num() -> None:
     check("2147483648")
     check("1e1000")  # check that we don't turn it info inf
     check("-1e1000")
+    check("1E+12_7_3J")
+    check("-1E+12_7_3J")
     check("-(1)")
 
 
