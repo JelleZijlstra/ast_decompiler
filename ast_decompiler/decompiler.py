@@ -892,7 +892,11 @@ class Decompiler(ast.NodeVisitor):
         self.write(repr(node.value))
 
     def visit_Constant(self, node: ast.Constant) -> None:
-        self.write_constant(node.value, node.kind)
+        if isinstance(node.value, str):
+            kind = node.kind
+        else:
+            kind = None
+        self.write_constant(node.value, kind)
 
     def write_constant(self, value: object, kind: Optional[str] = None) -> None:
         if value is Ellipsis:
