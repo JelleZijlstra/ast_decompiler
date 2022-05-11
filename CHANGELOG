@@ -1,4 +1,5 @@
 unreleased
+- Add `py.typed`
 - Fix decompilation of f-strings containing escaped braces
 - Preserve literal newlines in docstrings
 - Fix decompilation of complex infinity
