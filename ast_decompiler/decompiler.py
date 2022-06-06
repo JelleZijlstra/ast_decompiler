@@ -134,6 +134,7 @@ class DoubleStarArg(ast.AST):
     def __init__(self, arg: ast.arg) -> None:
         self.arg = arg
 
+
 class KeywordArg(ast.AST):
     """A x=3 keyword argument in a function definition."""
 
