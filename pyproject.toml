@@ -6,7 +6,7 @@ build-backend = "flit_core.buildapi"
 # Project metadata
 [project]
 name = "ast_decompiler"
-version = "0.5.0"
+version = "0.6.0"
 description = "Python module to decompile AST to Python code"
 readme = "README.rst"
 requires-python = ">=3.6"
