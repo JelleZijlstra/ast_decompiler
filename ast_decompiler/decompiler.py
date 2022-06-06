@@ -1076,7 +1076,7 @@ class Decompiler(ast.NodeVisitor):
         # TODO write a * if there are kwonly args but no vararg
         if node.kw_defaults:
             if node.kwonlyargs and not node.vararg:
-                args.append(StarArg(ast.arg(arg="")))
+                args.append(StarArg(ast.arg(arg="", annotation=None)))
             num_kwarg_defaults = len(node.kw_defaults)
             if num_kwarg_defaults:
                 args += node.kwonlyargs[:-num_kwarg_defaults]
