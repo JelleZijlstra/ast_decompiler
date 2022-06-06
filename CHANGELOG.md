@@ -1,6 +1,8 @@
-unreleased
+version 0.6.0 (June 6, 2022)
 - Support Python 3.11
 - Fix bug where annotations on `*args` and `**kwargs` were dropped
+- Stop addding redundant parentheses to tuple subscripts on Python 3.8 and lower
+  (thanks to Alex Waygood)
 
 version 0.5.0 (May 10, 2022)
 - Add `py.typed`
