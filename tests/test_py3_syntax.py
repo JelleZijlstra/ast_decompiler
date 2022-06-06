@@ -75,6 +75,11 @@ class WithMeta(metaclass=type):
     )
 
 
+@skip_before((3, 0))
+def test_annotations() -> None:
+    check("def f(a: int, b: int = 0, *args: int, c: int, **kwargs: int): pass")
+
+
 @skip_before((3, 5))
 def test_AsyncFor() -> None:
     check(

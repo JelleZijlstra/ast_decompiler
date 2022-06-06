@@ -122,7 +122,7 @@ class StarArg(ast.AST):
 
     _fields = ("arg",)
 
-    def __init__(self, arg: ast.Name) -> None:
+    def __init__(self, arg: ast.arg) -> None:
         self.arg = arg
 
 
@@ -131,7 +131,7 @@ class DoubleStarArg(ast.AST):
 
     _fields = ("arg",)
 
-    def __init__(self, arg: ast.Name) -> None:
+    def __init__(self, arg: ast.arg) -> None:
         self.arg = arg
 
 
@@ -425,16 +425,19 @@ class Decompiler(ast.NodeVisitor):
             self.write(" as ")
             self.visit(node.optional_vars)
 
-    def visit_Try(self, node: ast.Try) -> None:
+    def visit_Try(self, node: Union[ast.Try, "ast.TryStar"]) -> None:
         self.write_indentation()
         self.write("try:")
         self.write_newline()
         self.write_suite(node.body)
+        is_trystar = sys.version_info >= (3, 11) and isinstance(node, ast.TryStar)
         for handler in node.handlers:
-            self.visit(handler)
+            self.visit_ExceptHandler(handler, is_trystar=is_trystar)
         self.write_else(node.orelse)
         if node.finalbody:
             self.write_finalbody(node.finalbody)
+
+    visit_TryStar = visit_Try
 
     def write_finalbody(self, body: Sequence[ast.AST]) -> None:
         self.write_indentation()
@@ -1035,9 +1038,13 @@ class Decompiler(ast.NodeVisitor):
             self.write(" if ")
             self.visit(expr)
 
-    def visit_ExceptHandler(self, node: ast.ExceptHandler) -> None:
+    def visit_ExceptHandler(
+        self, node: ast.ExceptHandler, *, is_trystar: bool = False
+    ) -> None:
         self.write_indentation()
         self.write("except")
+        if is_trystar:
+            self.write("*")
         if node.type:
             self.write(" ")
             self.visit(node.type)
@@ -1065,12 +1072,12 @@ class Decompiler(ast.NodeVisitor):
             args.append(KeywordArg(name, value))
 
         if node.vararg:
-            args.append(StarArg(ast.Name(id=node.vararg.arg)))
+            args.append(StarArg(node.vararg))
 
         # TODO write a * if there are kwonly args but no vararg
         if node.kw_defaults:
             if node.kwonlyargs and not node.vararg:
-                args.append(StarArg(ast.Name(id="")))
+                args.append(StarArg(ast.arg(arg="", annotation=None)))
             num_kwarg_defaults = len(node.kw_defaults)
             if num_kwarg_defaults:
                 args += node.kwonlyargs[:-num_kwarg_defaults]
@@ -1084,7 +1091,7 @@ class Decompiler(ast.NodeVisitor):
                 args.append(KeywordArg(name, value))
 
         if node.kwarg:
-            args.append(DoubleStarArg(ast.Name(id=node.kwarg.arg)))
+            args.append(DoubleStarArg(node.kwarg))
 
         if args:
             # lambdas can't have a multiline arglist
