@@ -301,14 +301,8 @@ class Decompiler(ast.NodeVisitor):
 
     # Multi-line statements
 
-    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
-        self.write_function_def(node)
-
-    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
-        self.write_function_def(node, is_async=True)
-
-    def write_function_def(
-        self, node: Union[ast.FunctionDef, ast.AsyncFunctionDef], is_async: bool = False
+    def visit_FunctionDef(
+        self, node: Union[ast.FunctionDef, ast.AsyncFunctionDef]
     ) -> None:
         self.write_newline()
         for decorator in node.decorator_list:
@@ -318,7 +312,7 @@ class Decompiler(ast.NodeVisitor):
             self.write_newline()
 
         self.write_indentation()
-        if is_async:
+        if isinstance(node, ast.AsyncFunctionDef):
             self.write("async ")
         self.write(f"def {node.name}(")
         self.visit(node.args)
@@ -330,6 +324,8 @@ class Decompiler(ast.NodeVisitor):
         self.write_newline()
 
         self.write_suite(node.body)
+
+    visit_AsyncFunctionDef = visit_FunctionDef
 
     def visit_ClassDef(self, node: ast.ClassDef) -> None:
         self.write_newline()
@@ -348,17 +344,9 @@ class Decompiler(ast.NodeVisitor):
         self.write_newline()
         self.write_suite(node.body)
 
-    def visit_For(self, node: ast.For) -> None:
-        self.write_for(node)
-
-    def visit_AsyncFor(self, node: ast.AsyncFor) -> None:
-        self.write_for(node, is_async=True)
-
-    def write_for(
-        self, node: Union[ast.For, ast.AsyncFor], is_async: bool = False
-    ) -> None:
+    def visit_For(self, node: Union[ast.For, ast.AsyncFor]) -> None:
         self.write_indentation()
-        if is_async:
+        if isinstance(node, ast.AsyncFor):
             self.write("async ")
         self.write("for ")
         self.visit(node.target)
@@ -368,6 +356,8 @@ class Decompiler(ast.NodeVisitor):
         self.write_newline()
         self.write_suite(node.body)
         self.write_else(node.orelse)
+
+    visit_AsyncFor = visit_For
 
     def visit_While(self, node: ast.While) -> None:
         self.write_indentation()
@@ -404,20 +394,17 @@ class Decompiler(ast.NodeVisitor):
             self.write_newline()
             self.write_suite(orelse)
 
-    def visit_AsyncWith(self, node: ast.AsyncWith) -> None:
-        self.visit_With(node, is_async=True)
-
-    def visit_With(
-        self, node: Union[ast.With, ast.AsyncWith], is_async: bool = False
-    ) -> None:
+    def visit_With(self, node: Union[ast.With, ast.AsyncWith]) -> None:
         self.write_indentation()
-        if is_async:
+        if isinstance(node, ast.AsyncWith):
             self.write("async ")
         self.write("with ")
         self.write_expression_list(node.items, allow_newlines=False)
         self.write(":")
         self.write_newline()
         self.write_suite(node.body)
+
+    visit_AsyncWith = visit_With
 
     def visit_withitem(self, node: ast.withitem) -> None:
         self.visit(node.context_expr)
