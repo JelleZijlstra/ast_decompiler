@@ -12,4 +12,4 @@ A usage example::
     >> decompile(ast.parse('(a + b) * c'))
     (a + b) * c
 
-This module supports Python 3.6 through 3.10.
+This module supports Python 3.6 through 3.11.
