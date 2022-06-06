@@ -412,6 +412,7 @@ def test_Subscript() -> None:
     check("(-0j)[y]")
     check("x[y]")
     check("Callable[[P, Iterator], T]")
+    assert decompile(ast.parse("Union[str, int]")) == "Union[str, int]\n"
 
 
 def test_Name() -> None:

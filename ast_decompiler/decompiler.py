@@ -957,7 +957,7 @@ class Decompiler(ast.NodeVisitor):
             allow_parens = True
             should_parenthesize = not isinstance(
                 parent_node,
-                (ast.Expr, ast.Assign, ast.AugAssign, ast.Return, ast.Yield),
+                (ast.Expr, ast.Assign, ast.AugAssign, ast.Return, ast.Yield, ast.Index),
             )
             if (
                 isinstance(parent_node, ast.comprehension)
