@@ -1,3 +1,7 @@
+unreleased
+- Stop adding redundant parentheses to `complex` numbers with no real part and a negative
+  imaginary part (thanks to Alex Waygood)
+
 version 0.6.0 (June 6, 2022)
 - Support Python 3.11
 - Fix bug where annotations on `*args` and `**kwargs` were dropped

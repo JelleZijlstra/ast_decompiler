@@ -792,13 +792,6 @@ class Decompiler(ast.NodeVisitor):
                 and number.real == 0.0
                 and (number.imag < 0 or number.imag == -0.0)
             )
-        if not should_parenthesize and (isinstance(number, complex) or number < 0):
-            parent_node = self.get_parent_node()
-            should_parenthesize = (
-                isinstance(parent_node, ast.UnaryOp)
-                and isinstance(parent_node.op, ast.USub)
-                and hasattr(parent_node, "lineno")
-            )
         with self.parenthesize_if(should_parenthesize):
             if isinstance(number, float) and math.isinf(number):
                 # otherwise we write inf, which won't be parsed back right
@@ -990,7 +983,6 @@ class Decompiler(ast.NodeVisitor):
             self.visit(node.step)
 
     if sys.version_info < (3, 9):
-
         # Any to avoid version-dependent errors from pyanalyze.
         def visit_ExtSlice(self, node: Any) -> None:
             if len(node.dims) == 1:
