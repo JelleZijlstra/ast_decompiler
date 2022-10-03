@@ -368,6 +368,7 @@ def test_Num() -> None:
     assert_decompiles("-3j", "-3j\n")
     assert_decompiles("1 + 3j", "1 + 3j\n")
     assert_decompiles("-1-42j", "-1 - 42j\n")
+    assert_decompiles("-(1-42j)", "-(1 - 42j)\n")
 
 
 @only_on_version(2)
