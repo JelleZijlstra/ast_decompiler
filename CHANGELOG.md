@@ -1,4 +1,4 @@
-unreleased
+version 0.7.0 (October 3, 2022)
 - Stop adding redundant parentheses to `complex` numbers with no real part and a negative
   imaginary part (thanks to Alex Waygood)
 
