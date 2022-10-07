@@ -5,3 +5,6 @@ dist/
 ast_decompiler.egg-info/
 .tox/
 .hypothesis/
+env/
+venv/
+.venv/

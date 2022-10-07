@@ -13,3 +13,12 @@ A usage example::
     (a + b) * c
 
 This module supports Python 3.6 through 3.11.
+
+====================
+Tests and formatting
+====================
+
+To run the tests, install ``pytest`` in a virtual environment. Then, either use
+``tox``, or simply run ``pytest tests/``.
+
+The code is formatted with Black.
