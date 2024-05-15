@@ -891,15 +891,15 @@ class Decompiler(ast.NodeVisitor):
                 self.write(" ")
             self.visit(node.value)
             if node.conversion != -1:
-                # https://github.com/python/typeshed/pull/7810
-                # static analysis: ignore[incompatible_argument]
                 self.write(f"!{chr(node.conversion)}")
             if node.format_spec is not None:
                 self.write(":")
                 if isinstance(node.format_spec, ast.JoinedStr):
                     self.visit(node.format_spec)
-                elif isinstance(node.format_spec, ast.Str):
-                    self.write(node.format_spec.s)
+                elif isinstance(node.format_spec, ast.Constant) and isinstance(
+                    node.format_spec.value, str
+                ):
+                    self.write(node.format_spec.value)
                 else:
                     raise TypeError(
                         f"format spec must be a string, not {node.format_spec}"

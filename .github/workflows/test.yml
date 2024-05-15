@@ -1,4 +1,4 @@
-name: typeshed-client
+name: ast_decompiler
 
 on:
   - push
