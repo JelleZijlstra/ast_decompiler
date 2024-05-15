@@ -10,7 +10,6 @@ def test_With() -> None:
     )
 
 
-
 def test_TryFinally() -> None:
     assert_decompiles(
         """
@@ -33,7 +32,6 @@ finally:
     z = 4
 """,
     )
-
 
 
 def test_If() -> None:

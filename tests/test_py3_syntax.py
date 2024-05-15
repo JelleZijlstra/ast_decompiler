@@ -257,9 +257,6 @@ y: float
     )
 
 
-
-
-
 def test_async_await_in_fstring() -> None:
     check("f'{await x}'")
     check("f'{[x async for x in y]}'")

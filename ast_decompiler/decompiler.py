@@ -3,6 +3,7 @@
 Implementation of the decompiler class.
 
 """
+
 import ast
 import cmath
 from contextlib import contextmanager
@@ -475,6 +476,7 @@ class Decompiler(ast.NodeVisitor):
         self.write_newline()
 
     if sys.version_info >= (3, 12):
+
         def visit_TypeAlias(self, node: ast.TypeAlias) -> None:
             self.write_indentation()
             self.write("type ")
@@ -1031,11 +1033,9 @@ class Decompiler(ast.NodeVisitor):
 
     # Other types
 
-    visit_Load = (
-        visit_Store
-    ) = (
-        visit_Del
-    ) = visit_AugLoad = visit_AugStore = visit_Param = lambda self, node: None
+    visit_Load = visit_Store = visit_Del = visit_AugLoad = visit_AugStore = (
+        visit_Param
+    ) = lambda self, node: None
 
     def visit_comprehension(self, node: ast.comprehension) -> None:
         if node.is_async:
