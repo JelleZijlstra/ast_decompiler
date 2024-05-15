@@ -314,7 +314,12 @@ class Decompiler(ast.NodeVisitor):
         self.write_indentation()
         if isinstance(node, ast.AsyncFunctionDef):
             self.write("async ")
-        self.write(f"def {node.name}(")
+        self.write(f"def {node.name}")
+        if sys.version_info >= (3, 12) and node.type_params:
+            self.write("[")
+            self.write_expression_list(node.type_params)
+            self.write("]")
+        self.write("(")
         self.visit(node.args)
         self.write(")")
         if node.returns is not None:
@@ -337,7 +342,12 @@ class Decompiler(ast.NodeVisitor):
             self.write_newline()
 
         self.write_indentation()
-        self.write(f"class {node.name}(")
+        self.write(f"class {node.name}")
+        if sys.version_info >= (3, 12) and node.type_params:
+            self.write("[")
+            self.write_expression_list(node.type_params)
+            self.write("]")
+        self.write("(")
         exprs = node.bases + getattr(node, "keywords", [])
         self.write_expression_list(exprs, need_parens=False)
         self.write("):")
@@ -463,6 +473,42 @@ class Decompiler(ast.NodeVisitor):
         self.write("= ")
         self.visit(node.value)
         self.write_newline()
+
+    if sys.version_info >= (3, 12):
+        def visit_TypeAlias(self, node: ast.TypeAlias) -> None:
+            self.write_indentation()
+            self.write("type ")
+            self.visit(node.name)
+            if node.type_params:
+                self.write("[")
+                self.write_expression_list(node.type_params)
+                self.write("]")
+            self.write(" = ")
+            self.visit(node.value)
+            self.write_newline()
+
+        def visit_TypeVar(self, node: ast.TypeVar) -> None:
+            self.write(node.name)
+            if node.bound:
+                self.write(": ")
+                self.visit(node.bound)
+            if sys.version_info >= (3, 13) and node.default_value:
+                self.write(" = ")
+                self.visit(node.default_value)
+
+        def visit_TypeVarTuple(self, node: ast.TypeVarTuple) -> None:
+            self.write("*")
+            self.write(node.name)
+            if sys.version_info >= (3, 13) and node.default_value:
+                self.write(" = ")
+                self.visit(node.default_value)
+
+        def visit_ParamSpec(self, node: ast.ParamSpec) -> None:
+            self.write("**")
+            self.write(node.name)
+            if sys.version_info >= (3, 13) and node.default_value:
+                self.write(" = ")
+                self.visit(node.default_value)
 
     def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
         self.write_indentation()
@@ -777,9 +823,6 @@ class Decompiler(ast.NodeVisitor):
             self.write("=")
             self.visit(node.value)
 
-    def visit_Num(self, node: ast.Num) -> None:
-        self.write_number(node.n)
-
     def write_number(self, number: Union[int, float, complex]) -> None:
         should_parenthesize = (
             isinstance(number, int)
@@ -810,9 +853,6 @@ class Decompiler(ast.NodeVisitor):
                 self.node_stack.append(me)
             else:
                 self.write(repr(number))
-
-    def visit_Str(self, node: ast.Str) -> None:
-        self.write_string(node.s, kind=None)
 
     def write_string(self, string_value: str, kind: Optional[str] = None) -> None:
         if kind is not None:
@@ -870,10 +910,10 @@ class Decompiler(ast.NodeVisitor):
         has_parent = isinstance(self.get_parent_node(), ast.FormattedValue)
         with self.f_literalise_if(not has_parent):
             for value in node.values:
-                if isinstance(value, ast.Str):
+                if isinstance(value, ast.Constant) and isinstance(value.value, str):
                     # always escape '
                     self.write(
-                        value.s.encode("unicode-escape")
+                        value.value.encode("unicode-escape")
                         .decode("ascii")
                         .replace("'", r"\'")
                         .replace("{", "{{")
@@ -881,12 +921,6 @@ class Decompiler(ast.NodeVisitor):
                     )
                 else:
                     self.visit(value)
-
-    def visit_Bytes(self, node: ast.Bytes) -> None:
-        self.write(repr(node.s))
-
-    def visit_NameConstant(self, node: ast.NameConstant) -> None:
-        self.write(repr(node.value))
 
     def visit_Constant(self, node: ast.Constant) -> None:
         if isinstance(node.value, str):
@@ -969,9 +1003,6 @@ class Decompiler(ast.NodeVisitor):
 
     # slice
 
-    def visit_Ellipsis(self, node: ast.Ellipsis) -> None:
-        self.write("...")
-
     def visit_Slice(self, node: ast.Slice) -> None:
         if node.lower:
             self.visit(node.lower)
@@ -1036,7 +1067,7 @@ class Decompiler(ast.NodeVisitor):
 
     def visit_arguments(self, node: ast.arguments) -> None:
         args = []
-        if sys.version_info >= (3, 8) and node.posonlyargs:
+        if node.posonlyargs:
             args += node.posonlyargs
             args.append(ast.Name(id="/"))
 
