@@ -1,12 +1,12 @@
 import ast
 from ast_decompiler import decompile
-from .tests import assert_decompiles, check, only_on_version
+from .tests import assert_decompiles, check
 
 
 def test_non_module() -> None:
-    assert "3" == decompile(ast.Num(n=3))
+    assert "3" == decompile(ast.Constant(value=3))
     assert "1 + 1" == decompile(
-        ast.BinOp(op=ast.Add(), left=ast.Num(n=1), right=ast.Num(n=1))
+        ast.BinOp(op=ast.Add(), left=ast.Constant(value=1), right=ast.Constant(value=1))
     )
 
 
@@ -59,16 +59,6 @@ def test_Assign() -> None:
 def test_AugAssign() -> None:
     check("x += 3")
     check("y *= 5")
-
-
-@only_on_version(2)
-def test_Print() -> None:
-    check("print")
-    check("print >>sys.stderr")
-    check("print a, b")
-    check("print a, b,")
-    check("print a,")
-    check("print >>sys.stderr, a, b,")
 
 
 def test_For() -> None:
@@ -135,12 +125,6 @@ with x as y:
 def test_Raise() -> None:
     check("raise")
     check("raise e")
-
-
-@only_on_version(2)
-def test_Raise_old_syntax() -> None:
-    check("raise TypeError, e")
-    check("raise TypeError, e, tb")
 
 
 def test_TryExcept() -> None:
@@ -216,13 +200,6 @@ def test_ImportFrom() -> None:
     check("from .foo import bar")
     check("from foo import bar")
     check("from ....... import bar as foo")
-
-
-@only_on_version(2)
-def test_Exec() -> None:
-    check('exec "hello"')
-    check('exec "hello" in {}')
-    check('exec "hello" in {}, {}')
 
 
 def test_Global() -> None:
@@ -326,11 +303,6 @@ def test_Yield() -> None:
     check("def f(): x = yield 3")
 
 
-@only_on_version(2)
-def test_Yield_in_print() -> None:
-    check("def f(): print (yield 4)")
-
-
 def test_Compare() -> None:
     check("x < y")
     check("x > y < z")
@@ -343,11 +315,6 @@ def test_Call() -> None:
     check("f(1, x=2)")
     check("f(*args, **kwargs)")
     check("f(foo, *args, **kwargs)")
-
-
-@only_on_version(2)
-def test_Repr() -> None:
-    check("`foo`")
 
 
 def test_Num() -> None:
@@ -369,13 +336,6 @@ def test_Num() -> None:
     assert_decompiles("1 + 3j", "1 + 3j\n")
     assert_decompiles("-1-42j", "-1 - 42j\n")
     assert_decompiles("-(1-42j)", "-(1 - 42j)\n")
-
-
-@only_on_version(2)
-def test_longs() -> None:
-    check("-2147483648L")
-    check("2147483648L")
-    check("1L")
 
 
 def test_Str() -> None:

@@ -1,4 +1,4 @@
-from .tests import check, only_on_version
+from .tests import check
 
 
 def test_Yield() -> None:
@@ -22,17 +22,6 @@ def test_Tuple() -> None:
     check("x[(1, 2):(3, 4):(5, 6), (7, 8):]")
     check("()")
     check("x,")
-
-
-@only_on_version(2)
-def test_tuple_in_listcomp() -> None:
-    check("[(a, b) for f in c, d]")
-
-
-@only_on_version(2)
-def test_Tuple_arg() -> None:
-    check("def f((a, b)): pass")
-    check("lambda (a, b): None")
 
 
 def test_Lambda() -> None:

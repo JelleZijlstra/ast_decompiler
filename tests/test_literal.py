@@ -1,23 +1,9 @@
-from .tests import assert_decompiles, only_on_version
+from .tests import assert_decompiles
 
 
 def test_With() -> None:
     assert_decompiles(
         "with x as y, a as b: pass",
-        """with x as y, a as b:
-    pass
-""",
-    )
-
-
-@only_on_version(2)
-def test_With_collapsed() -> None:
-    assert_decompiles(
-        """
-with x as y:
-    with a as b:
-        pass
-""",
         """with x as y, a as b:
     pass
 """,
@@ -42,28 +28,6 @@ except Exception as e:
     pass
 else:
     z = 3
-finally:
-    z = 4
-""",
-    )
-
-
-@only_on_version(2)
-def test_TryFinally_collapsed() -> None:
-    assert_decompiles(
-        """
-try:
-    try:
-        1 / 0
-    except Exception as e:
-        pass
-finally:
-    z = 4
-""",
-        """try:
-    1 / 0
-except Exception as e:
-    pass
 finally:
     z = 4
 """,
