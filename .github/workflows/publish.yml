@@ -52,6 +52,7 @@ jobs:
     environment:
       name: publish
       url: https://pypi.org/p/ast-decompiler
+    permissions:
       id-token: write # IMPORTANT: mandatory for trusted publishing
 
     steps:
