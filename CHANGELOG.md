@@ -1,3 +1,7 @@
+version 0.8.0 (May 17, 2024)
+- Support Python 3.12 and 3.13; stop testing Python 3.6 and 3.7
+- Fix all DeprecationWarnings in the codebase
+
 version 0.7.0 (October 3, 2022)
 - Stop adding redundant parentheses to `complex` numbers with no real part and a negative
   imaginary part (thanks to Alex Waygood)
@@ -5,7 +9,7 @@ version 0.7.0 (October 3, 2022)
 version 0.6.0 (June 6, 2022)
 - Support Python 3.11
 - Fix bug where annotations on `*args` and `**kwargs` were dropped
-- Stop addding redundant parentheses to tuple subscripts on Python 3.8 and lower
+- Stop adding redundant parentheses to tuple subscripts on Python 3.8 and lower
   (thanks to Alex Waygood)
 
 version 0.5.0 (May 10, 2022)
