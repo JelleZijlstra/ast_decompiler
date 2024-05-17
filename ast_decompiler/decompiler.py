@@ -851,7 +851,9 @@ class Decompiler(ast.NodeVisitor):
                     val = str(-number)
                 else:
                     val = repr(type(number)(-number))  # - of long may be int
-                self.visit(ast.UnaryOp(op=ast.USub(), operand=ast.Name(id=val)))
+                self.visit(
+                    ast.UnaryOp(op=ast.USub(), operand=ast.Name(id=val, ctx=ast.Load()))
+                )
                 self.node_stack.append(me)
             else:
                 self.write(repr(number))
@@ -1069,7 +1071,7 @@ class Decompiler(ast.NodeVisitor):
         args = []
         if node.posonlyargs:
             args += node.posonlyargs
-            args.append(ast.Name(id="/"))
+            args.append(ast.Name(id="/", ctx=ast.Load()))
 
         num_defaults = len(node.defaults)
         if num_defaults:
