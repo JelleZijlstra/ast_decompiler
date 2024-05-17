@@ -58,3 +58,8 @@ incompatible_override = true
 target_version = ['py36']
 skip-magic-trailing-comma = true
 preview = true
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    "error",
+]
