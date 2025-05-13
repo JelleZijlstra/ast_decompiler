@@ -1,5 +1,5 @@
 Unreleased
-- Support Python 3.14
+- Support Python 3.14; stop testing Python 3.8
 
 version 0.8.0 (May 17, 2024)
 - Support Python 3.12 and 3.13; stop testing Python 3.6 and 3.7
