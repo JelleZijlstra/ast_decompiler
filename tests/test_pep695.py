@@ -29,3 +29,13 @@ type X = int
 type Y[T: (int, str), *Ts, *P] = T
 """
     )
+
+
+@skip_before((3, 13))
+def test_type_var_default() -> None:
+    check(
+        """
+def f[T=int, *Ts=(int, str), **P=()]() -> None:
+    pass
+"""
+    )

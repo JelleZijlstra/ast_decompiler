@@ -1,4 +1,4 @@
-from .tests import check
+from .tests import check, skip_after, skip_before
 
 
 def test_MatMult() -> None:
@@ -276,6 +276,7 @@ f({})
     )
 
 
+@skip_after((3, 14))
 def test_finally_continue() -> None:
     check(
         """
@@ -335,3 +336,11 @@ def f(x, /):
 def test_fstring_debug_specifier() -> None:
     check("f'{user=} {member_since=}'")
     check("f'{user=!s}  {delta.days=:,d}'")
+
+
+@skip_before((3, 14))
+def test_tstring() -> None:
+    check("t'a'")
+    check("t'{a}'")
+    check("t'{a!s}'")
+    check("t'{a:b}'")

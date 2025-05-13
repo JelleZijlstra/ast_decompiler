@@ -879,7 +879,10 @@ class Decompiler(ast.NodeVisitor):
         self.write(delimiter)
 
     def visit_FormattedValue(self, node: ast.FormattedValue) -> None:
-        has_parent = isinstance(self.get_parent_node(), ast.JoinedStr)
+        has_parent = isinstance(self.get_parent_node(), ast.JoinedStr) or (
+            sys.version_info >= (3, 14)
+            and isinstance(self.get_parent_node(), ast.TemplateStr)
+        )
         with self.f_literalise_if(not has_parent):
             self.write("{")
             if isinstance(node.value, ast.JoinedStr):
@@ -911,20 +914,64 @@ class Decompiler(ast.NodeVisitor):
             self.write("}")
 
     def visit_JoinedStr(self, node: ast.JoinedStr) -> None:
-        has_parent = isinstance(self.get_parent_node(), ast.FormattedValue)
+        has_parent = isinstance(self.get_parent_node(), ast.FormattedValue) or (
+            sys.version_info >= (3, 14)
+            and isinstance(self.get_parent_node(), ast.Interpolation)
+        )
         with self.f_literalise_if(not has_parent):
             for value in node.values:
-                if isinstance(value, ast.Constant) and isinstance(value.value, str):
-                    # always escape '
-                    self.write(
-                        value.value.encode("unicode-escape")
-                        .decode("ascii")
-                        .replace("'", r"\'")
-                        .replace("{", "{{")
-                        .replace("}", "}}")
-                    )
+                self._write_tf_string_part(value)
+
+    def _write_tf_string_part(self, value: ast.expr) -> None:
+        if isinstance(value, ast.Constant) and isinstance(value.value, str):
+            # always escape '
+            self.write(
+                value.value.encode("unicode-escape")
+                .decode("ascii")
+                .replace("'", r"\'")
+                .replace("{", "{{")
+                .replace("}", "}}")
+            )
+        else:
+            self.visit(value)
+
+    if sys.version_info >= (3, 14):
+
+        def visit_TemplateStr(self, node: ast.TemplateStr) -> None:
+            self.write("t'")
+            for value in node.values:
+                self._write_tf_string_part(value)
+            self.write("'")
+
+        def visit_Interpolation(self, node: ast.Interpolation) -> None:
+            self.write("{")
+            if isinstance(node.value, ast.JoinedStr):
+                raise NotImplementedError(
+                    "ast_decompiler does not support nested f-strings yet"
+                )
+            add_space = isinstance(
+                node.value, (ast.Set, ast.Dict, ast.SetComp, ast.DictComp)
+            )
+            if add_space:
+                self.write(" ")
+            self.write(node.str)
+            if node.conversion != -1:
+                self.write(f"!{chr(node.conversion)}")
+            if node.format_spec is not None:
+                self.write(":")
+                if isinstance(node.format_spec, ast.JoinedStr):
+                    self.visit(node.format_spec)
+                elif isinstance(node.format_spec, ast.Constant) and isinstance(
+                    node.format_spec.value, str
+                ):
+                    self.write(node.format_spec.value)
                 else:
-                    self.visit(value)
+                    raise TypeError(
+                        f"format spec must be a string, not {node.format_spec}"
+                    )
+            if add_space:
+                self.write(" ")
+            self.write("}")
 
     def visit_Constant(self, node: ast.Constant) -> None:
         if isinstance(node.value, str):

@@ -27,6 +27,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Software Development",
 ]
 
@@ -40,7 +41,7 @@ email = "jelle.zijlstra@gmail.com"
 include = ["CHANGELOG", "README.rst", "*/test*.py"]
 exclude = []
 
-[tool.pyanalyze]
+[tool.pycroscope]
 paths = ["ast_decompiler", "tests"]
 import_paths = ["."]
 
@@ -55,7 +56,7 @@ suggested_return_type = true
 incompatible_override = true
 
 [tool.black]
-target_version = ['py36']
+target-version = ['py38', 'py39', 'py310', 'py311', 'py312', 'py313']
 skip-magic-trailing-comma = true
 preview = true
 
