@@ -395,3 +395,39 @@ except* ValueError, TypeError:
     pass
 """
     )
+
+
+@skip_before((3, 15))
+def test_lazy_imports() -> None:
+    check("lazy import json")
+    check("lazy import json as js, os.path")
+    check("lazy from json import dumps, loads as l")
+    check("lazy from . import sibling")
+    check("lazy from ..pkg import item as alias")
+
+
+@skip_before((3, 15))
+def test_unpacking_comprehensions() -> None:
+    check("[*it for it in its]")
+    check("[*(x if x else y) for x in xs]")
+    check("[*item for row in rows if row for item in row]")
+    check("{*it for it in its}")
+    check("{*(x if x else y) for x in xs}")
+    check("{**d for d in dicts}")
+    check("{**(x if x else y) for x in xs}")
+    check("(*it for it in its)")
+    check("(*(y := [i, i + 1]) for i in its)")
+    check("f(*it for it in its)")
+
+
+@skip_before((3, 15))
+def test_async_unpacking_comprehensions() -> None:
+    check(
+        """
+async def f(xs):
+    a = [*x async for x in xs]
+    b = {*x async for x in xs}
+    c = {**x async for x in xs}
+    d = (*x async for x in xs)
+"""
+    )

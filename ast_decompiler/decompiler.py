@@ -349,7 +349,7 @@ class Decompiler(ast.NodeVisitor):
             self.write_expression_list(node.type_params)
             self.write("]")
         self.write("(")
-        exprs = node.bases + getattr(node, "keywords", [])
+        exprs = node.bases + node.keywords
         self.write_expression_list(exprs, need_parens=False)
         self.write("):")
         self.write_newline()
@@ -548,6 +548,8 @@ class Decompiler(ast.NodeVisitor):
 
     def visit_Import(self, node: ast.Import) -> None:
         self.write_indentation()
+        if sys.version_info >= (3, 15) and node.is_lazy:
+            self.write("lazy ")
         self.write("import ")
         self.write_expression_list(node.names, allow_newlines=False)
         self.write_newline()
@@ -555,6 +557,8 @@ class Decompiler(ast.NodeVisitor):
     def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
         self.write_indentation()
         dots = "." * (node.level or 0)
+        if sys.version_info >= (3, 15) and node.is_lazy:
+            self.write("lazy ")
         self.write(f"from {dots}")
         if node.module:
             self.write(node.module)
@@ -704,11 +708,16 @@ class Decompiler(ast.NodeVisitor):
 
     def visit_KeyValuePair(self, node: KeyValuePair) -> None:
         if node.key is None:
-            self.write("**")
+            self.write_double_starred(node.value)
         else:
             self.visit(node.key)
             self.write(": ")
-        self.visit(node.value)
+            self.visit(node.value)
+
+    def write_double_starred(self, node: ast.AST) -> None:
+        self.write("**")
+        with self.parenthesize_if(isinstance(node, ast.IfExp)):
+            self.visit(node)
 
     def visit_Set(self, node: ast.Set) -> None:
         self.write("{")
@@ -723,7 +732,10 @@ class Decompiler(ast.NodeVisitor):
 
     def visit_DictComp(self, node: ast.DictComp) -> None:
         self.write("{")
-        elts = [KeyValuePair(node.key, node.value)] + node.generators
+        if sys.version_info >= (3, 15) and node.value is None:
+            elts = [KeyValuePair(None, node.key)] + node.generators
+        else:
+            elts = [KeyValuePair(node.key, node.value)] + node.generators
         self.write_expression_list(elts, separator=" ", need_parens=False)
         self.write("}")
 
@@ -1008,9 +1020,9 @@ class Decompiler(ast.NodeVisitor):
         self.write("]")
 
     def visit_Starred(self, node: ast.Starred) -> None:
-        # TODO precedence
         self.write("*")
-        self.visit(node.value)
+        with self.parenthesize_if(isinstance(node.value, ast.IfExp)):
+            self.visit(node.value)
 
     def visit_Name(self, node: ast.Name) -> None:
         self.write(node.id)
@@ -1175,10 +1187,10 @@ class Decompiler(ast.NodeVisitor):
     def visit_keyword(self, node: ast.keyword) -> None:
         if node.arg is None:
             # in py3, **kwargs is a keyword whose arg is None
-            self.write("**")
+            self.write_double_starred(node.value)
         else:
             self.write(node.arg + "=")
-        self.visit(node.value)
+            self.visit(node.value)
 
     def visit_alias(self, node: ast.alias) -> None:
         self.write(node.name)
