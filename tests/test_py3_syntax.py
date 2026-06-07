@@ -1,3 +1,7 @@
+import ast
+
+from ast_decompiler import decompile
+
 from .tests import check, skip_after, skip_before
 
 
@@ -276,7 +280,7 @@ f({})
     )
 
 
-@skip_after((3, 14))
+@skip_after((3, 13))
 def test_finally_continue() -> None:
     check(
         """
@@ -342,5 +346,52 @@ def test_fstring_debug_specifier() -> None:
 def test_tstring() -> None:
     check("t'a'")
     check("t'{a}'")
+    check("t'{a=}'")
+    check("t'{a!a}'")
+    check("t'{a!r}'")
     check("t'{a!s}'")
     check("t'{a:b}'")
+    check("t'{a:{width}.2f}'")
+    check("t'{ {a, b} }'")
+    check("t'{ {a: b} }'")
+    check("t'{ {a for a in b} }'")
+    check("t'{ {a: b for a, b in c} }'")
+    check("t'{{'")
+    check("t'}}'")
+    check("t'{{{a}}}'")
+    check("t'{a}é'")
+
+
+@skip_before((3, 14))
+def test_tstring_generated_interpolation() -> None:
+    interpolation = ast.Interpolation(
+        value=ast.BinOp(
+            left=ast.Name(id="a", ctx=ast.Load()),
+            op=ast.Add(),
+            right=ast.Name(id="b", ctx=ast.Load()),
+        ),
+        str=None,
+        conversion=-1,
+    )
+    node = ast.Expression(body=ast.TemplateStr(values=[interpolation]))
+    assert decompile(node) == "t'{a + b}'"
+
+
+@skip_before((3, 14))
+def test_unparenthesized_except_groups() -> None:
+    check(
+        """
+try:
+    pass
+except ValueError, TypeError:
+    pass
+"""
+    )
+    check(
+        """
+try:
+    pass
+except* ValueError, TypeError:
+    pass
+"""
+    )

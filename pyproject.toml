@@ -9,7 +9,7 @@ name = "ast_decompiler"
 version = "0.8.0"
 description = "Python module to decompile AST to Python code"
 readme = "README.rst"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 urls.Home = "https://github.com/JelleZijlstra/ast_decompiler"
 license.file = "LICENSE"
 keywords = ["ast", "decompiler"]
@@ -40,7 +40,7 @@ email = "jelle.zijlstra@gmail.com"
 include = ["CHANGELOG", "README.rst", "*/test*.py"]
 exclude = []
 
-[tool.pycroscope]
+[tool.pyanalyze]
 paths = ["ast_decompiler", "tests"]
 import_paths = ["."]
 
@@ -53,9 +53,11 @@ value_always_true = true
 suggested_parameter_type = true
 suggested_return_type = true
 incompatible_override = true
+unsupported_operation = false
+incompatible_argument = false
 
 [tool.black]
-target-version = ['py38', 'py39', 'py310', 'py311', 'py312', 'py313']
+target-version = ['py39', 'py310', 'py311', 'py312', 'py313']
 skip-magic-trailing-comma = true
 preview = true
 

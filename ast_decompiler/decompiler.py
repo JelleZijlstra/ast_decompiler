@@ -949,12 +949,17 @@ class Decompiler(ast.NodeVisitor):
                 raise NotImplementedError(
                     "ast_decompiler does not support nested f-strings yet"
                 )
-            add_space = isinstance(
-                node.value, (ast.Set, ast.Dict, ast.SetComp, ast.DictComp)
-            )
-            if add_space:
-                self.write(" ")
-            self.write(node.str)
+            if node.str is None:
+                add_space = isinstance(
+                    node.value, (ast.Set, ast.Dict, ast.SetComp, ast.DictComp)
+                )
+                if add_space:
+                    self.write(" ")
+                self.visit(node.value)
+                if add_space:
+                    self.write(" ")
+            else:
+                self.write(node.str)
             if node.conversion != -1:
                 self.write(f"!{chr(node.conversion)}")
             if node.format_spec is not None:
@@ -969,8 +974,6 @@ class Decompiler(ast.NodeVisitor):
                     raise TypeError(
                         f"format spec must be a string, not {node.format_spec}"
                     )
-            if add_space:
-                self.write(" ")
             self.write("}")
 
     def visit_Constant(self, node: ast.Constant) -> None:
