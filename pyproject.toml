@@ -10,14 +10,14 @@ version = "0.8.0"
 description = "Python module to decompile AST to Python code"
 readme = "README.rst"
 requires-python = ">=3.9"
-urls.Home = "https://github.com/JelleZijlstra/ast_decompiler"
-license.file = "LICENSE"
+urls.Homepage = "https://github.com/JelleZijlstra/ast_decompiler"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 keywords = ["ast", "decompiler"]
 # Classifiers list: https://pypi.org/classifiers/
 classifiers = [
     "Environment :: Console",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: Python Software Foundation License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
