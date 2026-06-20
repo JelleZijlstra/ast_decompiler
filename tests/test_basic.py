@@ -38,6 +38,7 @@ class Bar(object):
     check("class Bar: pass")
     check("class Bar(object): pass")
     check("class Bar(int, str): pass")
+    check("class Bar(**(lambda: attrs)): pass")
 
 
 def test_Return() -> None:
@@ -315,6 +316,7 @@ def test_Call() -> None:
     check("f()")
     check("f(1)")
     check("f(1, x=2)")
+    check("f(**(lambda: kwargs))")
     check("f(*args, **kwargs)")
     check("f(foo, *args, **kwargs)")
 

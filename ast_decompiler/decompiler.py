@@ -716,7 +716,7 @@ class Decompiler(ast.NodeVisitor):
 
     def write_double_starred(self, node: ast.AST) -> None:
         self.write("**")
-        with self.parenthesize_if(isinstance(node, ast.IfExp)):
+        with self.parenthesize_if(isinstance(node, (ast.IfExp, ast.Lambda))):
             self.visit(node)
 
     def visit_Set(self, node: ast.Set) -> None:
