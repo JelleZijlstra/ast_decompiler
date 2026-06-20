@@ -1,6 +1,6 @@
 import ast
 from ast_decompiler import decompile
-from .tests import assert_decompiles, check
+from .tests import assert_decompiles, check, skip_before
 
 
 def test_non_module() -> None:
@@ -280,6 +280,25 @@ def test_ListComp() -> None:
     check("[x for x in y if z]")
     check("[x for x in y for z in a]")
     check("[x for x in (lambda: y)]")
+
+
+@skip_before((3, 10))
+def test_MatchClass_multiline_positional_and_keyword_patterns() -> None:
+    assert_decompiles(
+        """
+match 0:
+    case C(A() | B() | D() | 'xt' | 'some const text', name=[]):
+        pass
+""",
+        """match 0:
+    case C(
+        A() | B() | D() | 'xt' | 'some const text',
+        name=[],
+    ):
+        pass
+""",
+        line_length=50,
+    )
     assert "[a for a, b in x]\n" == decompile(ast.parse("[a for a, b in x]"))
 
 

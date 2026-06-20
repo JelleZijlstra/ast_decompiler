@@ -1250,13 +1250,14 @@ class Decompiler(ast.NodeVisitor):
     def visit_MatchClass(self, node: "ast.MatchClass") -> None:
         self.visit(node.cls)
         self.write("(")
-        self.write_expression_list(node.patterns, need_parens=False)
-        for i, (attr, pattern) in enumerate(zip(node.kwd_attrs, node.kwd_patterns)):
-            if i > 0 or node.patterns:
-                self.write(", ")
-            self.write(attr)
-            self.write("=")
-            self.visit(pattern)
+        patterns = [
+            *node.patterns,
+            *(
+                KeywordArg(ast.arg(arg=attr), pattern)
+                for attr, pattern in zip(node.kwd_attrs, node.kwd_patterns)
+            ),
+        ]
+        self.write_expression_list(patterns, need_parens=False)
         self.write(")")
 
     def visit_MatchAs(self, node: "ast.MatchAs") -> None:
