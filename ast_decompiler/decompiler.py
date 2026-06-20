@@ -1278,7 +1278,7 @@ class Decompiler(ast.NodeVisitor):
         with self.parenthesize_if(isinstance(parent_node, ast.MatchOr)):
             self.write_expression_list(
                 node.patterns,
-                need_parens=False,
+                need_parens=True,
                 separator=" | ",
                 final_separator_if_multiline=False,
             )

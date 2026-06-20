@@ -59,6 +59,8 @@ match x:
 def test_multiline_match_or() -> None:
     source = """
 match x:
+    case b"aaaaaaaaaaaaaaaaaaaaaaaa" | "bbbbbbbbbbbbbbbbbbbbbbbb":
+        pass
     case a(y=(b"aaaaaaaaaaaaaaaaaaaaaaaa" | "bbbbbbbbbbbbbbbbbbbbbbbb")):
         pass
 """
