@@ -1,3 +1,7 @@
+import ast
+
+from ast_decompiler import decompile
+
 from .tests import check, skip_before
 
 
@@ -29,6 +33,22 @@ type X = int
 type Y[T: (int, str), *Ts, *P] = T
 """
     )
+
+
+@skip_before((3, 12))
+def test_multiline_type_params() -> None:
+    source = """
+def f[LongName: int, *LongTuple, **LongParams]() -> None:
+    pass
+
+class C[LongName: int, *LongTuple, **LongParams]:
+    pass
+
+type Alias[LongName: int, *LongTuple, **LongParams] = LongName
+"""
+    decompiled = decompile(ast.parse(source), line_length=20)
+
+    ast.parse(decompiled)
 
 
 @skip_before((3, 13))

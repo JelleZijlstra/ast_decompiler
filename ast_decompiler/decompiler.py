@@ -318,7 +318,7 @@ class Decompiler(ast.NodeVisitor):
         self.write(f"def {node.name}")
         if sys.version_info >= (3, 12) and node.type_params:
             self.write("[")
-            self.write_expression_list(node.type_params)
+            self.write_expression_list(node.type_params, need_parens=False)
             self.write("]")
         self.write("(")
         self.visit(node.args)
@@ -346,7 +346,7 @@ class Decompiler(ast.NodeVisitor):
         self.write(f"class {node.name}")
         if sys.version_info >= (3, 12) and node.type_params:
             self.write("[")
-            self.write_expression_list(node.type_params)
+            self.write_expression_list(node.type_params, need_parens=False)
             self.write("]")
         self.write("(")
         exprs = node.bases + node.keywords
@@ -483,7 +483,7 @@ class Decompiler(ast.NodeVisitor):
             self.visit(node.name)
             if node.type_params:
                 self.write("[")
-                self.write_expression_list(node.type_params)
+                self.write_expression_list(node.type_params, need_parens=False)
                 self.write("]")
             self.write(" = ")
             self.visit(node.value)
