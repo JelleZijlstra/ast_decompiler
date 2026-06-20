@@ -207,6 +207,31 @@ def test_FormattedValue() -> None:
     check('f"{{{a}"')
 
 
+def test_formatted_dict_with_format_spec() -> None:
+    tree = ast.Module(
+        body=[
+            ast.Expr(
+                value=ast.JoinedStr(
+                    values=[
+                        ast.FormattedValue(
+                            value=ast.Dict(keys=[], values=[]),
+                            conversion=115,
+                            format_spec=ast.JoinedStr(
+                                values=[ast.Constant(value="'''")]
+                            ),
+                        ),
+                        ast.Constant(value='"""'),
+                    ]
+                )
+            )
+        ],
+        type_ignores=[],
+    )
+    ast.fix_missing_locations(tree)
+
+    assert ast.dump(ast.parse(decompile(tree))) == ast.dump(tree)
+
+
 def test_Bytes() -> None:
     check('b"a"')
 
