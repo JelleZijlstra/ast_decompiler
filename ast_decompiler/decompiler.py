@@ -656,7 +656,13 @@ class Decompiler(ast.NodeVisitor):
         )
         with self.parenthesize_if(should_parenthesize):
             self.write("lambda")
-            if node.args.args or node.args.vararg or node.args.kwarg:
+            if (
+                node.args.posonlyargs
+                or node.args.args
+                or node.args.vararg
+                or node.args.kwonlyargs
+                or node.args.kwarg
+            ):
                 self.write(" ")
             self.visit(node.args)
             self.write(": ")
