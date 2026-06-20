@@ -1271,7 +1271,10 @@ class Decompiler(ast.NodeVisitor):
         parent_node = self.get_parent_node()
         with self.parenthesize_if(isinstance(parent_node, ast.MatchOr)):
             self.write_expression_list(
-                node.patterns, need_parens=False, separator=" | "
+                node.patterns,
+                need_parens=False,
+                separator=" | ",
+                final_separator_if_multiline=False,
             )
 
     def visit_MatchStar(self, node: "ast.MatchStar") -> None:

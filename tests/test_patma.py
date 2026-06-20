@@ -1,3 +1,7 @@
+import ast
+
+from ast_decompiler import decompile
+
 from .tests import check, skip_before
 
 
@@ -49,3 +53,15 @@ match x:
         pass
 """
     )
+
+
+@skip_before((3, 10))
+def test_multiline_match_or() -> None:
+    source = """
+match x:
+    case a(y=(b"aaaaaaaaaaaaaaaaaaaaaaaa" | "bbbbbbbbbbbbbbbbbbbbbbbb")):
+        pass
+"""
+    decompiled = decompile(ast.parse(source), line_length=40)
+
+    ast.parse(decompiled)
