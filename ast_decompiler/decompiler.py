@@ -1138,19 +1138,18 @@ class Decompiler(ast.NodeVisitor):
 
     def visit_arguments(self, node: ast.arguments) -> None:
         args = []
-        if node.posonlyargs:
-            args += node.posonlyargs
-            args.append(ast.Name(id="/", ctx=ast.Load()))
-
+        positional_args = [*node.posonlyargs, *node.args]
         num_defaults = len(node.defaults)
-        if num_defaults:
-            args += node.args[:-num_defaults]
-            default_args = zip(node.args[-num_defaults:], node.defaults)
-        else:
-            args += list(node.args)
-            default_args = []
-        for name, value in default_args:
-            args.append(KeywordArg(name, value))
+        first_default = len(positional_args) - num_defaults
+        for index, arg in enumerate(positional_args):
+            if node.posonlyargs and index == len(node.posonlyargs):
+                args.append(ast.Name(id="/", ctx=ast.Load()))
+            if index >= first_default:
+                args.append(KeywordArg(arg, node.defaults[index - first_default]))
+            else:
+                args.append(arg)
+        if node.posonlyargs and not node.args:
+            args.append(ast.Name(id="/", ctx=ast.Load()))
 
         if node.vararg:
             args.append(StarArg(node.vararg))
