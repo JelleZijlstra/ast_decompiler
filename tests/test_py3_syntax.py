@@ -172,6 +172,12 @@ async def f(x):
     return 3, (await x)
 """
     )
+    check(
+        """
+async def f(x, y, z):
+    return await (x if y else z)
+"""
+    )
 
 
 def test_YieldFrom() -> None:

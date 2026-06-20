@@ -778,7 +778,8 @@ class Decompiler(ast.NodeVisitor):
             )
         ):
             self.write("await ")
-            self.visit(node.value)
+            with self.parenthesize_if(isinstance(node.value, ast.IfExp)):
+                self.visit(node.value)
 
     def visit_Yield(self, node: ast.Yield) -> None:
         with self.parenthesize_if(
