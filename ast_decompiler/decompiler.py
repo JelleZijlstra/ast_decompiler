@@ -1107,7 +1107,8 @@ class Decompiler(ast.NodeVisitor):
         self.write("for ")
         self.visit(node.target)
         self.write(" in ")
-        self.visit(node.iter)
+        with self.parenthesize_if(isinstance(node.iter, ast.Lambda)):
+            self.visit(node.iter)
         for expr in node.ifs:
             self.write(" if ")
             self.visit(expr)

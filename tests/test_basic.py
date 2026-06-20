@@ -274,6 +274,7 @@ def test_ListComp() -> None:
     check("[x for x in y]")
     check("[x for x in y if z]")
     check("[x for x in y for z in a]")
+    check("[x for x in (lambda: y)]")
     assert "[a for a, b in x]\n" == decompile(ast.parse("[a for a, b in x]"))
 
 
@@ -293,6 +294,7 @@ def test_GeneratorExp() -> None:
     check("(x for x in y)")
     check("(x for x in y if z)")
     check("(x for x in y for z in a)")
+    check("(x for x in (lambda: y))")
     check("f(x for x in y)")
     assert "f(x for x in y)\n" == decompile(ast.parse("f(x for x in y)"))
 
