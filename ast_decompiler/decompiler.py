@@ -1239,7 +1239,9 @@ class Decompiler(ast.NodeVisitor):
         items = [
             KeyValuePair(key, value) for key, value in zip(node.keys, node.patterns)
         ]
-        self.write_expression_list(items, need_parens=False)
+        self.write_expression_list(
+            items, need_parens=False, final_separator_if_multiline=node.rest is None
+        )
         if node.rest is not None:
             if node.keys:
                 self.write(", ")

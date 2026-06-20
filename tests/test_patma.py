@@ -67,3 +67,19 @@ match x:
     decompiled = decompile(ast.parse(source), line_length=40)
 
     ast.parse(decompiled)
+
+
+@skip_before((3, 10))
+def test_multiline_match_mapping_with_rest() -> None:
+    source = """
+match x:
+    case {
+        b"aaaaaaaaaaaaaaaaaaaaaaaa": first,
+        b"bbbbbbbbbbbbbbbbbbbbbbbb": second,
+        **rest,
+    }:
+        pass
+"""
+    decompiled = decompile(ast.parse(source), line_length=40)
+
+    ast.parse(decompiled)
