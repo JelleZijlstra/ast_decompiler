@@ -913,7 +913,8 @@ class Decompiler(ast.NodeVisitor):
             )
             if add_space:
                 self.write(" ")
-            self.visit(node.value)
+            with self.parenthesize_if(isinstance(node.value, ast.Lambda)):
+                self.visit(node.value)
             if add_space:
                 self.write(" ")
             if node.conversion != -1:

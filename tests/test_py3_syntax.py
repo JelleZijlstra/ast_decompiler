@@ -205,6 +205,7 @@ def test_FormattedValue() -> None:
     check("f'{ {a: b} }'")
     check("f'{ {a for a in b} }'")
     check("f'{ {a: b for a, b in c} }'")
+    check("f'{(lambda: 0)}'")
     check(r"f'{a}\n'")
     check(r"f'{a}\t'")
     check("f'{a}é'")
