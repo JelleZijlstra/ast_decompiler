@@ -1027,7 +1027,7 @@ class Decompiler(ast.NodeVisitor):
 
     def visit_Starred(self, node: ast.Starred) -> None:
         self.write("*")
-        with self.parenthesize_if(isinstance(node.value, ast.IfExp)):
+        with self.parenthesize_if(isinstance(node.value, (ast.Compare, ast.IfExp))):
             self.visit(node.value)
 
     def visit_Name(self, node: ast.Name) -> None:

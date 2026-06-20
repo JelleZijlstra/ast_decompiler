@@ -243,6 +243,28 @@ def test_NameConstant() -> None:
 def test_Starred() -> None:
     check("a, *b = 3")
     check("[a, *b]")
+    tree = ast.Module(
+        body=[
+            ast.Expr(
+                value=ast.Tuple(
+                    elts=[
+                        ast.Starred(
+                            value=ast.Compare(
+                                left=ast.Constant(value=0),
+                                ops=[ast.LtE()],
+                                comparators=[ast.Constant(value=0)],
+                            ),
+                            ctx=ast.Load(),
+                        )
+                    ],
+                    ctx=ast.Load(),
+                )
+            )
+        ],
+        type_ignores=[],
+    )
+    ast.fix_missing_locations(tree)
+    assert ast.dump(ast.parse(decompile(tree))) == ast.dump(tree)
 
 
 def test_kwonlyargs() -> None:
