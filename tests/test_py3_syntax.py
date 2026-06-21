@@ -2,7 +2,7 @@ import ast
 
 from ast_decompiler import decompile
 
-from .tests import check, skip_after, skip_before
+from .tests import assert_decompiles, check, skip_after, skip_before
 
 
 def test_MatMult() -> None:
@@ -215,28 +215,7 @@ def test_FormattedValue() -> None:
 
 
 def test_formatted_dict_with_format_spec() -> None:
-    tree = ast.Module(
-        body=[
-            ast.Expr(
-                value=ast.JoinedStr(
-                    values=[
-                        ast.FormattedValue(
-                            value=ast.Dict(keys=[], values=[]),
-                            conversion=115,
-                            format_spec=ast.JoinedStr(
-                                values=[ast.Constant(value="'''")]
-                            ),
-                        ),
-                        ast.Constant(value='"""'),
-                    ]
-                )
-            )
-        ],
-        type_ignores=[],
-    )
-    ast.fix_missing_locations(tree)
-
-    assert ast.dump(ast.parse(decompile(tree))) == ast.dump(tree)
+    check("f\"{ {} :'''}\"")
 
 
 def test_Bytes() -> None:
@@ -250,28 +229,7 @@ def test_NameConstant() -> None:
 def test_Starred() -> None:
     check("a, *b = 3")
     check("[a, *b]")
-    tree = ast.Module(
-        body=[
-            ast.Expr(
-                value=ast.Tuple(
-                    elts=[
-                        ast.Starred(
-                            value=ast.Compare(
-                                left=ast.Constant(value=0),
-                                ops=[ast.LtE()],
-                                comparators=[ast.Constant(value=0)],
-                            ),
-                            ctx=ast.Load(),
-                        )
-                    ],
-                    ctx=ast.Load(),
-                )
-            )
-        ],
-        type_ignores=[],
-    )
-    ast.fix_missing_locations(tree)
-    assert ast.dump(ast.parse(decompile(tree))) == ast.dump(tree)
+    check("(*(0 <= 0),)")
 
 
 def test_kwonlyargs() -> None:
