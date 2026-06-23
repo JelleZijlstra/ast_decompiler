@@ -1,6 +1,6 @@
 import ast
 from ast_decompiler import decompile
-from .tests import assert_decompiles, check
+from .tests import assert_decompiles, check, skip_before
 
 
 def test_non_module() -> None:
@@ -38,6 +38,7 @@ class Bar(object):
     check("class Bar: pass")
     check("class Bar(object): pass")
     check("class Bar(int, str): pass")
+    check("class Bar(**(lambda: attrs)): pass")
 
 
 def test_Return() -> None:
@@ -250,6 +251,10 @@ def test_UnaryOp() -> None:
 def test_Lambda() -> None:
     check("lambda: None")
     check("lambda x: None")
+    check("lambda x, /: None")
+    check("lambda x=0, /: None")
+    check("lambda x, /, y=0: None")
+    check("lambda *, x: None")
     check("lambda x: x ** x")
     check("[x for x in y if (lambda: x)]")
 
@@ -274,6 +279,26 @@ def test_ListComp() -> None:
     check("[x for x in y]")
     check("[x for x in y if z]")
     check("[x for x in y for z in a]")
+    check("[x for x in (lambda: y)]")
+
+
+@skip_before((3, 10))
+def test_MatchClass_multiline_positional_and_keyword_patterns() -> None:
+    assert_decompiles(
+        """
+match 0:
+    case C(A() | B() | D() | 'xt' | 'some const text', name=[]):
+        pass
+""",
+        """match 0:
+    case C(
+        A() | B() | D() | 'xt' | 'some const text',
+        name=[],
+    ):
+        pass
+""",
+        line_length=50,
+    )
     assert "[a for a, b in x]\n" == decompile(ast.parse("[a for a, b in x]"))
 
 
@@ -293,6 +318,7 @@ def test_GeneratorExp() -> None:
     check("(x for x in y)")
     check("(x for x in y if z)")
     check("(x for x in y for z in a)")
+    check("(x for x in (lambda: y))")
     check("f(x for x in y)")
     assert "f(x for x in y)\n" == decompile(ast.parse("f(x for x in y)"))
 
@@ -313,6 +339,7 @@ def test_Call() -> None:
     check("f()")
     check("f(1)")
     check("f(1, x=2)")
+    check("f(**(lambda: kwargs))")
     check("f(*args, **kwargs)")
     check("f(foo, *args, **kwargs)")
 

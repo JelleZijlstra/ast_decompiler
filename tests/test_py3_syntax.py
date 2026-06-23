@@ -2,7 +2,7 @@ import ast
 
 from ast_decompiler import decompile
 
-from .tests import check, skip_after, skip_before
+from .tests import assert_decompiles, check, skip_after, skip_before
 
 
 def test_MatMult() -> None:
@@ -172,6 +172,12 @@ async def f(x):
     return 3, (await x)
 """
     )
+    check(
+        """
+async def f(x, y, z):
+    return await (x if y else z)
+"""
+    )
 
 
 def test_YieldFrom() -> None:
@@ -199,12 +205,17 @@ def test_FormattedValue() -> None:
     check("f'{ {a: b} }'")
     check("f'{ {a for a in b} }'")
     check("f'{ {a: b for a, b in c} }'")
+    check("f'{(lambda: 0)}'")
     check(r"f'{a}\n'")
     check(r"f'{a}\t'")
     check("f'{a}é'")
     check('f"{{"')
     check('f"}}"')
     check('f"{{{a}"')
+
+
+def test_formatted_dict_with_format_spec() -> None:
+    check("f\"{ {} :'''}\"")
 
 
 def test_Bytes() -> None:
@@ -218,6 +229,7 @@ def test_NameConstant() -> None:
 def test_Starred() -> None:
     check("a, *b = 3")
     check("[a, *b]")
+    check("(*(0 <= 0),)")
 
 
 def test_kwonlyargs() -> None:

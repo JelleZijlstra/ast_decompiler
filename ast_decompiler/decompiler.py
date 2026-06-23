@@ -318,7 +318,7 @@ class Decompiler(ast.NodeVisitor):
         self.write(f"def {node.name}")
         if sys.version_info >= (3, 12) and node.type_params:
             self.write("[")
-            self.write_expression_list(node.type_params)
+            self.write_expression_list(node.type_params, need_parens=False)
             self.write("]")
         self.write("(")
         self.visit(node.args)
@@ -346,7 +346,7 @@ class Decompiler(ast.NodeVisitor):
         self.write(f"class {node.name}")
         if sys.version_info >= (3, 12) and node.type_params:
             self.write("[")
-            self.write_expression_list(node.type_params)
+            self.write_expression_list(node.type_params, need_parens=False)
             self.write("]")
         self.write("(")
         exprs = node.bases + node.keywords
@@ -483,7 +483,7 @@ class Decompiler(ast.NodeVisitor):
             self.visit(node.name)
             if node.type_params:
                 self.write("[")
-                self.write_expression_list(node.type_params)
+                self.write_expression_list(node.type_params, need_parens=False)
                 self.write("]")
             self.write(" = ")
             self.visit(node.value)
@@ -656,7 +656,13 @@ class Decompiler(ast.NodeVisitor):
         )
         with self.parenthesize_if(should_parenthesize):
             self.write("lambda")
-            if node.args.args or node.args.vararg or node.args.kwarg:
+            if (
+                node.args.posonlyargs
+                or node.args.args
+                or node.args.vararg
+                or node.args.kwonlyargs
+                or node.args.kwarg
+            ):
                 self.write(" ")
             self.visit(node.args)
             self.write(": ")
@@ -716,7 +722,7 @@ class Decompiler(ast.NodeVisitor):
 
     def write_double_starred(self, node: ast.AST) -> None:
         self.write("**")
-        with self.parenthesize_if(isinstance(node, ast.IfExp)):
+        with self.parenthesize_if(isinstance(node, (ast.IfExp, ast.Lambda))):
             self.visit(node)
 
     def visit_Set(self, node: ast.Set) -> None:
@@ -772,7 +778,8 @@ class Decompiler(ast.NodeVisitor):
             )
         ):
             self.write("await ")
-            self.visit(node.value)
+            with self.parenthesize_if(isinstance(node.value, ast.IfExp)):
+                self.visit(node.value)
 
     def visit_Yield(self, node: ast.Yield) -> None:
         with self.parenthesize_if(
@@ -906,7 +913,10 @@ class Decompiler(ast.NodeVisitor):
             )
             if add_space:
                 self.write(" ")
-            self.visit(node.value)
+            with self.parenthesize_if(isinstance(node.value, ast.Lambda)):
+                self.visit(node.value)
+            if add_space:
+                self.write(" ")
             if node.conversion != -1:
                 self.write(f"!{chr(node.conversion)}")
             if node.format_spec is not None:
@@ -921,8 +931,6 @@ class Decompiler(ast.NodeVisitor):
                     raise TypeError(
                         f"format spec must be a string, not {node.format_spec}"
                     )
-            if add_space:
-                self.write(" ")
             self.write("}")
 
     def visit_JoinedStr(self, node: ast.JoinedStr) -> None:
@@ -1021,7 +1029,7 @@ class Decompiler(ast.NodeVisitor):
 
     def visit_Starred(self, node: ast.Starred) -> None:
         self.write("*")
-        with self.parenthesize_if(isinstance(node.value, ast.IfExp)):
+        with self.parenthesize_if(isinstance(node.value, (ast.Compare, ast.IfExp))):
             self.visit(node.value)
 
     def visit_Name(self, node: ast.Name) -> None:
@@ -1107,7 +1115,8 @@ class Decompiler(ast.NodeVisitor):
         self.write("for ")
         self.visit(node.target)
         self.write(" in ")
-        self.visit(node.iter)
+        with self.parenthesize_if(isinstance(node.iter, ast.Lambda)):
+            self.visit(node.iter)
         for expr in node.ifs:
             self.write(" if ")
             self.visit(expr)
@@ -1131,19 +1140,18 @@ class Decompiler(ast.NodeVisitor):
 
     def visit_arguments(self, node: ast.arguments) -> None:
         args = []
-        if node.posonlyargs:
-            args += node.posonlyargs
-            args.append(ast.Name(id="/", ctx=ast.Load()))
-
+        positional_args = [*node.posonlyargs, *node.args]
         num_defaults = len(node.defaults)
-        if num_defaults:
-            args += node.args[:-num_defaults]
-            default_args = zip(node.args[-num_defaults:], node.defaults)
-        else:
-            args += list(node.args)
-            default_args = []
-        for name, value in default_args:
-            args.append(KeywordArg(name, value))
+        first_default = len(positional_args) - num_defaults
+        for index, arg in enumerate(positional_args):
+            if node.posonlyargs and index == len(node.posonlyargs):
+                args.append(ast.Name(id="/", ctx=ast.Load()))
+            if index >= first_default:
+                args.append(KeywordArg(arg, node.defaults[index - first_default]))
+            else:
+                args.append(arg)
+        if node.posonlyargs and not node.args:
+            args.append(ast.Name(id="/", ctx=ast.Load()))
 
         if node.vararg:
             args.append(StarArg(node.vararg))
@@ -1232,7 +1240,9 @@ class Decompiler(ast.NodeVisitor):
         items = [
             KeyValuePair(key, value) for key, value in zip(node.keys, node.patterns)
         ]
-        self.write_expression_list(items, need_parens=False)
+        self.write_expression_list(
+            items, need_parens=False, final_separator_if_multiline=node.rest is None
+        )
         if node.rest is not None:
             if node.keys:
                 self.write(", ")
@@ -1242,13 +1252,14 @@ class Decompiler(ast.NodeVisitor):
     def visit_MatchClass(self, node: "ast.MatchClass") -> None:
         self.visit(node.cls)
         self.write("(")
-        self.write_expression_list(node.patterns, need_parens=False)
-        for i, (attr, pattern) in enumerate(zip(node.kwd_attrs, node.kwd_patterns)):
-            if i > 0 or node.patterns:
-                self.write(", ")
-            self.write(attr)
-            self.write("=")
-            self.visit(pattern)
+        patterns = [
+            *node.patterns,
+            *(
+                KeywordArg(ast.arg(arg=attr), pattern)
+                for attr, pattern in zip(node.kwd_attrs, node.kwd_patterns)
+            ),
+        ]
+        self.write_expression_list(patterns, need_parens=False)
         self.write(")")
 
     def visit_MatchAs(self, node: "ast.MatchAs") -> None:
@@ -1270,7 +1281,10 @@ class Decompiler(ast.NodeVisitor):
         parent_node = self.get_parent_node()
         with self.parenthesize_if(isinstance(parent_node, ast.MatchOr)):
             self.write_expression_list(
-                node.patterns, need_parens=False, separator=" | "
+                node.patterns,
+                need_parens=True,
+                separator=" | ",
+                final_separator_if_multiline=False,
             )
 
     def visit_MatchStar(self, node: "ast.MatchStar") -> None:

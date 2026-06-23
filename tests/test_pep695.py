@@ -1,3 +1,7 @@
+import ast
+
+from ast_decompiler import decompile
+
 from .tests import check, skip_before
 
 
@@ -28,6 +32,22 @@ def test_type_alias() -> None:
 type X = int
 type Y[T: (int, str), *Ts, *P] = T
 """
+    )
+
+
+@skip_before((3, 12))
+def test_multiline_type_params() -> None:
+    check(
+        """
+def f[LongName: int, *LongTuple, **LongParams]() -> None:
+    pass
+
+class C[LongName: int, *LongTuple, **LongParams]:
+    pass
+
+type Alias[LongName: int, *LongTuple, **LongParams] = LongName
+""",
+        line_length=20,
     )
 
 

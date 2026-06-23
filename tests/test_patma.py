@@ -1,3 +1,5 @@
+import ast
+
 from .tests import check, skip_before
 
 
@@ -48,4 +50,34 @@ match x:
     case (y | z) | a:
         pass
 """
+    )
+
+
+@skip_before((3, 10))
+def test_multiline_match_or() -> None:
+    check(
+        """
+match x:
+    case b"aaaaaaaaaaaaaaaaaaaaaaaa" | "bbbbbbbbbbbbbbbbbbbbbbbb":
+        pass
+    case a(y=(b"aaaaaaaaaaaaaaaaaaaaaaaa" | "bbbbbbbbbbbbbbbbbbbbbbbb")):
+        pass
+""",
+        line_length=40,
+    )
+
+
+@skip_before((3, 10))
+def test_multiline_match_mapping_with_rest() -> None:
+    check(
+        """
+match x:
+    case {
+        b"aaaaaaaaaaaaaaaaaaaaaaaa": first,
+        b"bbbbbbbbbbbbbbbbbbbbbbbb": second,
+        **rest,
+    }:
+        pass
+""",
+        line_length=40,
     )

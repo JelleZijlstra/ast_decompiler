@@ -3,10 +3,12 @@ from ast_decompiler import decompile
 import difflib
 
 
-def check(code: str) -> None:
+def check(code: str, line_length=100) -> None:
     """Checks that the code remains the same when decompiled and re-parsed."""
     tree = ast.parse(code)
-    new_code = decompile(tree)
+
+    new_code = decompile(tree, line_length=line_length)
+
     try:
         new_tree = ast.parse(new_code)
     except SyntaxError as e:
