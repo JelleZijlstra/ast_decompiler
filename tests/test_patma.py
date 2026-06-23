@@ -1,7 +1,5 @@
 import ast
 
-from ast_decompiler import decompile
-
 from .tests import check, skip_before
 
 
@@ -57,21 +55,22 @@ match x:
 
 @skip_before((3, 10))
 def test_multiline_match_or() -> None:
-    source = """
+    check(
+        """
 match x:
     case b"aaaaaaaaaaaaaaaaaaaaaaaa" | "bbbbbbbbbbbbbbbbbbbbbbbb":
         pass
     case a(y=(b"aaaaaaaaaaaaaaaaaaaaaaaa" | "bbbbbbbbbbbbbbbbbbbbbbbb")):
         pass
-"""
-    decompiled = decompile(ast.parse(source), line_length=40)
-
-    ast.parse(decompiled)
+""",
+        line_length=40,
+    )
 
 
 @skip_before((3, 10))
 def test_multiline_match_mapping_with_rest() -> None:
-    source = """
+    check(
+        """
 match x:
     case {
         b"aaaaaaaaaaaaaaaaaaaaaaaa": first,
@@ -79,7 +78,6 @@ match x:
         **rest,
     }:
         pass
-"""
-    decompiled = decompile(ast.parse(source), line_length=40)
-
-    ast.parse(decompiled)
+""",
+        line_length=40,
+    )
