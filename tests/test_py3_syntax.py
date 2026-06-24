@@ -163,6 +163,18 @@ async def f(x):
     check(
         """
 async def f(x):
+    x = await call(x)
+"""
+    )
+    check(
+        """
+async def f(x):
+    x = await obj.call
+"""
+    )
+    check(
+        """
+async def f(x):
     x += await x
 """
     )
@@ -176,6 +188,30 @@ async def f(x):
         """
 async def f(x, y, z):
     return await (x if y else z)
+"""
+    )
+    check(
+        """
+async def f(x, y):
+    return await (x + y)
+"""
+    )
+    check(
+        """
+async def f(x, y):
+    return await (x >= y)
+"""
+    )
+    check(
+        """
+async def f(x, y):
+    return await (x or y)
+"""
+    )
+    check(
+        """
+async def f(x):
+    return await (-x)
 """
     )
 
@@ -230,6 +266,10 @@ def test_Starred() -> None:
     check("a, *b = 3")
     check("[a, *b]")
     check("(*(0 <= 0),)")
+    check("*(not x),")
+    check("*a,")
+    check("*a.b,")
+    check("*a(),")
 
 
 def test_kwonlyargs() -> None:
