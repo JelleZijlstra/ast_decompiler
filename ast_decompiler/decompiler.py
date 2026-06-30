@@ -778,7 +778,11 @@ class Decompiler(ast.NodeVisitor):
             )
         ):
             self.write("await ")
-            with self.parenthesize_if(isinstance(node.value, ast.IfExp)):
+            with self.parenthesize_if(
+                not isinstance(
+                    node.value, (ast.Name, ast.Attribute, ast.Call, ast.Constant)
+                )
+            ):
                 self.visit(node.value)
 
     def visit_Yield(self, node: ast.Yield) -> None:
@@ -1029,7 +1033,12 @@ class Decompiler(ast.NodeVisitor):
 
     def visit_Starred(self, node: ast.Starred) -> None:
         self.write("*")
-        with self.parenthesize_if(isinstance(node.value, (ast.Compare, ast.IfExp))):
+
+        with self.parenthesize_if(
+            not isinstance(
+                node.value, (ast.Name, ast.Attribute, ast.Call, ast.Constant)
+            )
+        ):
             self.visit(node.value)
 
     def visit_Name(self, node: ast.Name) -> None:
